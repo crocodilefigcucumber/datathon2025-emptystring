@@ -1,8 +1,7 @@
 import numpy as np
-import pandas as np
+import pandas as pd
 import os
 import sys
-import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -23,14 +22,43 @@ if __name__ == "__main__":
     else:
         clients_dataframe = pd.read_csv(dataset_csv)
 
-    # columns = clients_dataframe.columns
+    print(clients_dataframe.columns)
 
-    # gaps = np.array([sum(np.isna(clients_dataframe[col])) for col in columns])
-    # incomplete = gaps > 0
+    # --- Correlation analysis: text length vs rejection ---
+    # Convert rejection label to binary
+    clients_dataframe["is_rejected"] = (
+        clients_dataframe["label_label"] == "Reject"
+    ).astype(int)
 
-    # sns.set_theme()
-    # pl1 = sns.relplot(y=gaps[incomplete], x=columns[incomplete])
-    # pl1.set_xticklabels(rotation=90)
-    # plt.show()
+    # Create a new DataFrame with text lengths
+    text_lengths = pd.DataFrame()
+    for col in clients_dataframe.columns:
+        if col in ["label_label", "is_rejected"]:
+            continue
+        lengths = clients_dataframe[col].apply(
+            lambda x: len(str(x)) if pd.notnull(x) else 0
+        )
+        if lengths.nunique() > 1:  # Skip constant columns
+            text_lengths[col + "_len"] = lengths
 
-    # check for correlations between len
+    # Add label column
+    text_lengths["is_rejected"] = clients_dataframe["is_rejected"]
+
+    # Compute correlation matrix
+    correlation_matrix = text_lengths.corr()
+    correlation_with_label = (
+        correlation_matrix["is_rejected"]
+        .drop("is_rejected")
+        .sort_values(ascending=False)
+    )
+
+    print("Top correlations with Rejected label:")
+    print(correlation_with_label)
+
+    # Plot the correlations
+    plt.figure(figsize=(10, 6))
+    sns.barplot(x=correlation_with_label.values, y=correlation_with_label.index)
+    plt.title("Correlation between Text Field Lengths and 'Rejected' Label")
+    plt.xlabel("Correlation with Rejected")
+    plt.tight_layout()
+    plt.show()
