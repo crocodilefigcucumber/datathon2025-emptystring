@@ -48,5 +48,14 @@ if __name__ == "__main__":
                 results.at[client_name, "accept"] = "Reject"
                 results.at[client_name, "comment"] += ", " + comment
 
+    # output results in the correct format
+    results_out = results[["accept"]].copy()
+    results_out.index.name = None  # remove index name
+
+    if mode in ["train", "test", "val"]:
+        results_out.to_csv(f"{mode}_results.csv", sep=";", header=False)
+    else:
+        results_out.to_csv(".csv", sep=";", header=False)
+
     print(results)
     print(sum(results["accept"] == "Reject"))
