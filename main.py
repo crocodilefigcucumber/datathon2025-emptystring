@@ -88,7 +88,7 @@ if __name__ == "__main__":
     if mode in ["train", "test", "val"]:
         results_out.to_csv(f"{mode}_results.csv", sep=";", header=False)
     else:
-        results_out.to_csv(".csv", sep=";", header=False)
+        results_out.to_csv("empty.csv", sep=";", header=False)
 
     print(results)
     print(sum(results["accept"] == "Reject"))
