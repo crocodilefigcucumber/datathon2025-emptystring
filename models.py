@@ -4,7 +4,7 @@ import numpy as np
 
 from utilities.unzip_data import extract_all_archives
 from utilities.evaluate import evaluate
-from utilities.collect_csv import collect_enriched
+from utilities.collect_data import collect_enriched
 
 from rules.trusted import RM_contact
 from rules.passportdate import check_passport_expiry
@@ -56,16 +56,3 @@ if __name__ == "__main__":
         data = pd.read_csv(filename)
 
     print(data.columns)
-"""     # output results in the correct format
-    results_out = results[["Accept"]].copy()
-    results_out.index.name = None  # remove index name
-
-    if mode in ["train", "test", "val"]:
-        results_out.to_csv(f"{mode}_results.csv", sep=";", header=False)
-    else:
-        results_out.to_csv("emptystring.csv", sep=";", header=False)
-
-    print(results)
-    print(evaluate(results))
-    print(sum(results["Accept"] == "Reject"))
- """
