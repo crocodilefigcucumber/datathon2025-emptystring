@@ -3,6 +3,7 @@ import os
 import numpy as np
 
 from utilities.unzip_data import extract_all_archives
+from utilities.evaluate import evaluate
 from rules.passportdate import check_passport_expiry
 import sys
 
@@ -10,7 +11,7 @@ if __name__ == "__main__":
     """
     Main script for processing client data and applying validation rules.
     This script reads a dataset split file, processes client folders, and applies a set of rules
-    to determine whether each client folder is accepted or rejected. The results are saved to a CSV file.
+    to determine whether each client folder is Accepted or Rejected. The results are saved to a CSV file.
     Modules:
         - pandas: For data manipulation and analysis.
         - os: For interacting with the operating system.
@@ -63,8 +64,8 @@ if __name__ == "__main__":
     clients = pd.read_csv(split_path)["file_path"].tolist()
     clients = sorted(clients)
 
-    results = pd.DataFrame(index=clients, columns=["accept", "comment"])
-    results["accept"] = ""
+    results = pd.DataFrame(index=clients, columns=["Accept", "comment"])
+    results["Accept"] = ""
     results["comment"] = ""
 
     if not clients:
@@ -74,15 +75,15 @@ if __name__ == "__main__":
         client_path = os.path.join(dataset_path, client_name)
         print(f"Processing folder: {client_path}")
 
-        results.at[client_name, "accept"] = "Accept"
+        results.at[client_name, "Accept"] = "Accept"
         for func in rules:
-            accept, comment = func(client_path)
-            if not accept:
-                results.at[client_name, "accept"] = "Reject"
+            Accept, comment = func(client_path)
+            if not Accept:
+                results.at[client_name, "Accept"] = "Reject"
                 results.at[client_name, "comment"] += ", " + comment
 
     # output results in the correct format
-    results_out = results[["accept"]].copy()
+    results_out = results[["Accept"]].copy()
     results_out.index.name = None  # remove index name
 
     if mode in ["train", "test", "val"]:
@@ -90,5 +91,7 @@ if __name__ == "__main__":
     else:
         results_out.to_csv("empty.csv", sep=";", header=False)
 
+
     print(results)
-    print(sum(results["accept"] == "Reject"))
+    print(evaluate(results))
+    print(sum(results["Accept"] == "Reject"))
