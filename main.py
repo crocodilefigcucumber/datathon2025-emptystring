@@ -28,8 +28,6 @@ if __name__ == "__main__":
     clients = sorted(clients)
     n_clients = len(clients)
 
-    dataset_path = "data/"
-
     # set up results table
     results = pd.DataFrame(data=np.zeros((n_clients, 3)))
     results.columns = ["client_name", "accept", "comment"]
@@ -38,7 +36,7 @@ if __name__ == "__main__":
     results["comment"] = [""] * n_clients
 
     if not clients:
-        print(f"No folders found in {dataset_path}")
+        print(f"No folders found.")
 
     i = 0
     # check for all clients
