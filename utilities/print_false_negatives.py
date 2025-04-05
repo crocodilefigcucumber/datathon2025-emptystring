@@ -1,10 +1,9 @@
 import os
 import pandas as pd
-import random
 import json
 
 
-def print_random_false_negatives():
+def print_sorted_false_negatives():
     # Read the false negatives from the CSV file
     false_negatives_file = "false_negatives.csv"
     if not os.path.exists(false_negatives_file):
@@ -13,8 +12,8 @@ def print_random_false_negatives():
 
     false_negatives = pd.read_csv(false_negatives_file, header=None)[0].tolist()
 
-    # Shuffle the false negatives for random iteration
-    random.shuffle(false_negatives)
+    # Sort the false negatives alphabetically
+    false_negatives.sort()
 
     for client_id in false_negatives:
         client_dir = os.path.join("data", client_id)
@@ -46,4 +45,4 @@ def print_random_false_negatives():
 
 
 if __name__ == "__main__":
-    print_random_false_negatives()
+    print_sorted_false_negatives()
