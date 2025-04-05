@@ -5,6 +5,7 @@ import numpy as np
 from utilities.unzip_data import extract_all_archives
 from utilities.evaluate import evaluate
 from rules.passportdate import check_passport_expiry
+from rules.names_check import check_names
 import sys
 
 if __name__ == "__main__":
@@ -41,7 +42,7 @@ if __name__ == "__main__":
         4. Apply validation rules to each client folder.
         5. Save the results to a CSV file.
     """
-    rules = [check_passport_expiry]
+    rules = [check_names]
 
     # Read mode from flags
     mode = "train"  # Default mode
@@ -89,8 +90,7 @@ if __name__ == "__main__":
     if mode in ["train", "test", "val"]:
         results_out.to_csv(f"{mode}_results.csv", sep=";", header=False)
     else:
-        results_out.to_csv("empty.csv", sep=";", header=False)
-
+        results_out.to_csv("emptystring.csv", sep=";", header=False)
 
     print(results)
     print(evaluate(results))
