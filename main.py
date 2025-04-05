@@ -3,7 +3,7 @@ import os
 import numpy as np
 
 from utilities.unzip_data import extract_all_archives
-from passportdate import check_passport_expiry
+from rules.passportdate import check_passport_expiry
 import sys
 
 if __name__ == "__main__":
