@@ -23,12 +23,14 @@ if __name__ == "__main__":
     else:
         clients_dataframe = pd.read_csv(dataset_csv)
 
-    columns = clients_dataframe.columns
+    # columns = clients_dataframe.columns
 
-    gaps = np.array([sum(np.isna(clients_dataframe[col])) for col in columns])
-    incomplete = gaps > 0
+    # gaps = np.array([sum(np.isna(clients_dataframe[col])) for col in columns])
+    # incomplete = gaps > 0
 
-    sns.set_theme()
-    pl1 = sns.relplot(y=gaps[incomplete], x=columns[incomplete])
-    pl1.set_xticklabels(rotation=90)
-    plt.show()
+    # sns.set_theme()
+    # pl1 = sns.relplot(y=gaps[incomplete], x=columns[incomplete])
+    # pl1.set_xticklabels(rotation=90)
+    # plt.show()
+
+    # check for correlations between len
