@@ -17,12 +17,15 @@ if __name__ == "__main__":
             print("mode: One of train, test, val, final")
             sys.exit(0)
         mode = sys.argv[1].strip().lower()
+
     if mode not in ["train", "test", "val", "final"]:
         raise ValueError("Invalid mode. Please enter one of: train, test, val, final.")
 
     if mode in ["train", "test", "val"]:
         # get list of clients
         split_path = "splits/" + mode + "_split.csv"
+    else:
+        raise NotImplementedError("Final mode not yet implemented.")
 
     clients = pd.read_csv(split_path)["file_path"].tolist()
     clients = sorted(clients)
