@@ -24,7 +24,9 @@ mdurl==0.1.2
 mypy-extensions==1.0.0
 nbformat==5.10.4
 nest_asyncio @ file:///home/conda/feedstock_root/build_artifacts/nest-asyncio_1733325553580/work
+numpy==2.2.4
 packaging @ file:///home/conda/feedstock_root/build_artifacts/packaging_1733203243479/work
+pandas==2.2.3
 parso @ file:///home/conda/feedstock_root/build_artifacts/parso_1733271261340/work
 pathspec==0.12.1
 pexpect @ file:///home/conda/feedstock_root/build_artifacts/pexpect_1733301927746/work
@@ -36,6 +38,7 @@ ptyprocess @ file:///home/conda/feedstock_root/build_artifacts/ptyprocess_173330
 pure_eval @ file:///home/conda/feedstock_root/build_artifacts/pure_eval_1733569405015/work
 Pygments @ file:///home/conda/feedstock_root/build_artifacts/pygments_1736243443484/work
 python-dateutil @ file:///home/conda/feedstock_root/build_artifacts/python-dateutil_1733215673016/work
+pytz==2025.2
 PyYAML==6.0.2
 pyzmq @ file:///home/conda/feedstock_root/build_artifacts/pyzmq_1743831255788/work
 referencing==0.36.2
@@ -46,5 +49,6 @@ tomli==2.2.1
 tornado @ file:///home/conda/feedstock_root/build_artifacts/tornado_1732615898999/work
 traitlets @ file:///home/conda/feedstock_root/build_artifacts/traitlets_1733367359838/work
 typing_extensions @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_typing_extensions_1743820059/work
+tzdata==2025.2
 wcwidth @ file:///home/conda/feedstock_root/build_artifacts/wcwidth_1733231326287/work
 zipp @ file:///home/conda/feedstock_root/build_artifacts/zipp_1732827521216/work

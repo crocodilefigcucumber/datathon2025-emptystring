@@ -2,20 +2,28 @@ import pandas as pd
 import os
 import numpy as np
 
-from utils import extract_all_archives
+from utilities.unzip_data import extract_all_archives
 from passportdate import check_passport_expiry
-from test import toy
+import sys
 
 if __name__ == "__main__":
-    rules = [toy, check_passport_expiry]
+    rules = [check_passport_expiry]
 
-    dataset_path = "./data"
-    if False:
-        extract_all_archives(dataset_path)
+    # Read mode from flags
+    mode = "train"  # Default mode
+    if len(sys.argv) > 1:
+        if sys.argv[1].strip().lower() in ["--help", "-h"]:
+            print("Usage: python main.py [mode]")
+            print("mode: One of train, test, val, final")
+            sys.exit(0)
+        mode = sys.argv[1].strip().lower()
+    if mode not in ["train", "test", "val", "final"]:
+        raise ValueError("Invalid mode. Please enter one of: train, test, val, final.")
 
     # get list of clients
-    clients = [item for item in os.listdir(dataset_path) 
-                    if os.path.isdir(os.path.join(dataset_path, item))]
+    dataset_path = "splits/" + mode + "_split.csv"
+
+    clients = pd.read_csv(dataset_path)["file_path"].tolist()
     clients = sorted(clients)
     n_clients = len(clients)
 
@@ -23,8 +31,8 @@ if __name__ == "__main__":
     results = pd.DataFrame(data=np.zeros((n_clients, 3)))
     results.columns = ["client_name", "accept", "comment"]
     results["client_name"] = clients
-    results["accept"] = [""]*n_clients
-    results["comment"] = [""]*n_clients
+    results["accept"] = [""] * n_clients
+    results["comment"] = [""] * n_clients
 
     if not clients:
         print(f"No folders found in {dataset_path}")
@@ -36,10 +44,10 @@ if __name__ == "__main__":
         print(f"Processing folder: {folder}")
 
         # apply all rules for rejection
-        results.loc[i, "accept"] = "accept"       
+        results.loc[i, "accept"] = "accept"
         for func in rules:
             accept, comment = func(folder_path)
-            
+
             # update acceptation record
             if not accept:
                 results.loc[i, "accept"] = "reject"
