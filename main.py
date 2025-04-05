@@ -42,7 +42,7 @@ if __name__ == "__main__":
         4. Apply validation rules to each client folder.
         5. Save the results to a CSV file.
     """
-    rules = [check_names]
+    rules = [check_names, check_passport_expiry]
 
     # Read mode from flags
     mode = "train"  # Default mode
