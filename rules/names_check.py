@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Tuple
 
 
-def check_passport_expiry(folder_dir: str) -> Tuple[bool, str]:
+def check_name_consistency(folder_dir: str) -> Tuple[bool, str]:
     """
     Validates the consistency of names across passport, account form, and client profile JSON files
     located in the specified folder directory.
