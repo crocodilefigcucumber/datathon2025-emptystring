@@ -1,15 +1,15 @@
 import numpy as np
 import pandas as np
 import os
-import pathlib
-import json
 import sys
 import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 from utilities.collect_csv import collect_to_csv
 
 if __name__=="__main__":
-    mode = "test"  # Default mode
+    mode = "train"  # Default mode
     if len(sys.argv) > 1:
         if sys.argv[1].strip().lower() in ["--help", "-h"]:
             print("Usage: python main.py [mode]")
@@ -31,4 +31,12 @@ if __name__=="__main__":
     else:
         clients_dataframe = pd.read_csv(dataset_csv)
     
-    print(clients_dataframe.columns)
+    columns = clients_dataframe.columns
+
+    gaps = np.array([sum(np.isna(clients_dataframe[col])) for col in columns])
+    incomplete = (gaps > 0)
+
+    sns.set_theme()
+    pl1 = sns.relplot(y=gaps[incomplete], x=columns[incomplete])
+    pl1.set_xticklabels(rotation=90)
+    plt.show()
