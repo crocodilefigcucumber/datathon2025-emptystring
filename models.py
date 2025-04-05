@@ -2,6 +2,8 @@ import pandas as pd
 import os
 import numpy as np
 import joblib
+from datetime import datetime
+import json
 
 # Scikit-learn utilities
 from sklearn.model_selection import KFold, RandomizedSearchCV
@@ -40,32 +42,42 @@ from get_clean_dataframe import clean_dataframe
 from rules.trusted import RM_contact
 from rules.passportdate import check_passport_expiry
 from rules.names_check import check_names
+from rules.consistency import check_inconsistency
 import sys
 
 if __name__ == "__main__":
 
-    rules = [check_passport_expiry, RM_contact]
+    rules = [check_passport_expiry, RM_contact, check_inconsistency]
 
     # Read mode from flags
     mode = "train"
-    filename = mode + "_csv.csv"
+    filename =  "enriched_" + mode + ".csv"
     if not os.path.exists(filename):
         data = collect_enriched(mode=mode, filename=filename, rules=rules)
     else:
         data = pd.read_csv(filename)
 
+    
+    
+    validation_file = "enriched_" + mode + ".csv"
+    if not os.path.exists("enriched_val.csv"):
+        val_df = collect_enriched(mode="val", filename="enriched_val.csv", rules=rules)
+    else:
+        val_df  = pd.read_csv("enriched_val.csv")
+    
     train_df = clean_dataframe(data)
-
+    val_df = clean_dataframe(val_df)
     # ------------------------------------------------------------------------------
     # 1. Load pre-split datasets
     # ------------------------------------------------------------------------------
 
 
     categorical_features = [
-    "gender", "country", "country_code", "nationality", "country_of_domicile",
-    "marital_status", "inheritance_details_relationship", "investment_risk_profile",
-    "investment_horizon", "investment_experience", "type_of_mandate", "currency"
+        "inheritance_details_relationship", "investment_risk_profile",
+        "investment_horizon", "investment_experience", "currency"
     ]
+    for rule in rules:
+        categorical_features.append(rule.__name__)
 
     numerical_features = [
         "aum_savings", "aum_inheritance", "aum_real_estate_value"
@@ -81,6 +93,7 @@ if __name__ == "__main__":
 
     # Convert target to binary: 1 if "Reject", 0 if "Accept" (adjust as needed)
     train_df[target_col] = (train_df[target_col] == "Reject").astype(int)
+    val_df[target_col]   = (val_df[target_col]   == "Reject").astype(int)
 
     # For modeling, select only the features we want
     feature_columns = numerical_features + categorical_features
@@ -88,6 +101,8 @@ if __name__ == "__main__":
     X_train = train_df[feature_columns]
     y_train = train_df[target_col]
 
+    X_val = val_df[feature_columns]
+    y_val = val_df[target_col]
     # ------------------------------------------------------------------------------
     # 3. Build preprocessing pipelines for numerical and categorical features
     # ------------------------------------------------------------------------------
@@ -111,7 +126,7 @@ if __name__ == "__main__":
     # ------------------------------------------------------------------------------
     models = {
         "RandomForest":    RandomForestClassifier(random_state=SEED),
-        #"LightGBM":        LGBMClassifier(random_state=SEED),
+        "LightGBM":        LGBMClassifier(random_state=SEED),
         #"Lasso":           LogisticRegression(penalty='l1', solver='liblinear', random_state=SEED),
         #"Ridge":           RidgeClassifier(random_state=SEED),
         #"SVM":             SVC(probability=True, random_state=SEED),
@@ -127,9 +142,9 @@ if __name__ == "__main__":
     # ------------------------------------------------------------------------------
     param_distributions = {
         "RandomForest": {
-            "classifier__n_estimators": sp_randint(50, 200),
-            "classifier__max_depth":    sp_randint(2, 15),
-            "classifier__min_samples_split": sp_randint(2, 10),
+            "classifier__n_estimators": [50], #sp_randint(50, 200),
+            "classifier__max_depth":    [10], #sp_randint(2, 15),
+            "classifier__min_samples_split": [4], #sp_randint(2, 10),
         },
         "LightGBM": {
             "classifier__num_leaves": sp_randint(20, 50),
@@ -179,14 +194,8 @@ if __name__ == "__main__":
     # ------------------------------------------------------------------------------
     # 6. Train models with hyperparameter search and evaluate on validation set
     # ------------------------------------------------------------------------------
-    results = []
-
-    val_df   = pd.read_csv("val_csv.csv")
-    val_df = clean_dataframe(val_df)
-    val_df[target_col]   = (val_df[target_col]   == "Reject").astype(int)
-
-    X_val = val_df[feature_columns]
-    y_val = val_df[target_col]
+    results = {}
+    best = {model_name: None for model_name in models.keys()}
     for model_name, model in models.items():
         print(f"\n\n=== Model: {model_name} ===")
         
@@ -214,6 +223,7 @@ if __name__ == "__main__":
         random_search.fit(X_train, y_train)
         
         best_estimator = random_search.best_estimator_
+        best[model_name] = best_estimator
         print(f"Best params: {random_search.best_params_}")
         print(f"CV best score (train set): {random_search.best_score_:.4f}")
         
@@ -226,13 +236,13 @@ if __name__ == "__main__":
         print("Validation Confusion Matrix:")
         print(cm_val)
         
-        results.append({
+        results[model_name] = {
             "model": model_name,
             "best_params": random_search.best_params_,
             "cv_best_score": random_search.best_score_,
             "val_accuracy": val_accuracy,
             "val_confusion_matrix": cm_val
-        })
+        }
 
         print(results)
 
@@ -240,5 +250,15 @@ if __name__ == "__main__":
     if not os.path.exists("saved_models"):
         os.makedirs('saved_models')
 
-    # Save each trained model
-    joblib.dump(models["RandomForest"], 'saved_models/random_forest_model.pkl')
+    
+    for model in models.keys():
+        # Save each trained model
+        timestamp = datetime.now().strftime("%H:%M")
+        joblib.dump(best[model], f'saved_models/{model}_{timestamp}_model.pkl')
+        
+        # Description
+        details = {key: str(value) for key, value in results[model].items()}
+        details["trained on"] = categorical_features + numerical_features
+        with open(f"saved_models/details_{model}_{timestamp}.json", 'w') as fp:
+            json.dump(details, fp)
+        
