@@ -41,5 +41,7 @@ if __name__ == "__main__":
         Run the script directly to extract all supported archives in the
         "data/" directory:
             python unzip_data.py
+    NOTE: expected directory structure:
+        data/client_*
     """
     extract_all_archives("data/")
