@@ -7,6 +7,7 @@ from utilities.evaluate import evaluate
 from rules.passportdate import check_passport_expiry
 from rules.names_check import check_names
 from rules.nationality_check import check_nationality_match
+from rules.consistency import check_inconsistency
 
 import sys
 
@@ -44,7 +45,8 @@ if __name__ == "__main__":
         4. Apply validation rules to each client folder.
         5. Save the results to a CSV file.
     """
-    rules = [check_nationality_match]
+    rules = [check_inconsistency, check_names, check_passport_expiry]
+    verbose = False  # during loop over clients
 
     # Read mode from flags
     mode = "train"  # Default mode
@@ -76,7 +78,8 @@ if __name__ == "__main__":
 
     for client_name, _ in results.iterrows():
         client_path = os.path.join(dataset_path, client_name)
-        print(f"Processing folder: {client_path}")
+        if verbose:
+            print(f"Processing folder: {client_path}")
 
         results.at[client_name, "Accept"] = "Accept"
         for func in rules:
@@ -98,5 +101,17 @@ if __name__ == "__main__":
     print(confus)
     print("No. rejections:", sum(results["Accept"] == "Reject"))
 
+    print(10 * "#" + "False Negatives" + 10 * "#")
+    # Write false negatives to a CSV file
+    with open("false_negatives.csv", "w") as f:
+        f.write("Client\n")
+        for client in false_negatives:
+            f.write(f"{client}\n")
+
+    # Print false negatives to the console
+    for client in false_negatives:
+        print(f"False negative for {client}")
+
+    print(10 * "#" + "False Positives" + 10 * "#")
     for reason, clients in zip(fp_rules, false_positives):
         print(f"False positive for {reason}: {clients}")
