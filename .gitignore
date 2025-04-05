@@ -9,3 +9,7 @@ data/*
 train_results.csv
 test_results.csv
 val_results.csv
+
+#  Ignore .pyc
+*.pyc
+__pycache__/
