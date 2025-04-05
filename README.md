@@ -44,3 +44,9 @@ Solution provided will be evaluated according to following criteria:
 
 ### Hand-in
 To evaluate prediction score, classification labels have to be provided in the same format as in the provided example. Name your submission csv file as "<team_name>.csv". Please fork this repository, start developing your project, and ensure your final submission, including your code, is uploaded to your forked repository **before Sunday 12:00pm**, as this will be used to evaluate your solution.
+
+---
+
+### NOTES
+
+The cutoff date for passport expiration is the *2025-04-30*.
