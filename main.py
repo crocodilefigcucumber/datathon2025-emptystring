@@ -6,6 +6,8 @@ from utilities.unzip_data import extract_all_archives
 from utilities.evaluate import evaluate
 from rules.passportdate import check_passport_expiry
 from rules.names_check import check_names
+from rules.nationality_check import check_nationality_match
+
 import sys
 
 if __name__ == "__main__":
@@ -42,7 +44,7 @@ if __name__ == "__main__":
         4. Apply validation rules to each client folder.
         5. Save the results to a CSV file.
     """
-    rules = [check_names, check_passport_expiry]
+    rules = [check_nationality_match]
 
     # Read mode from flags
     mode = "train"  # Default mode
