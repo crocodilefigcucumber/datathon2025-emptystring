@@ -54,10 +54,11 @@ def check_names(folder_dir: str) -> Tuple[bool, str]:
 
     # ----------PASSPORT----------
     # Read the passport JSON file
+    passport_file = os.path.join(folder_dir, "passport.json")
+
     with open(passport_file, "r") as file:
         passport_data = json.load(file)
 
-    passport_file = os.path.join(folder_dir, "passport.json")
     if not os.path.exists(passport_file):
         print(f"Passport found in '{folder_dir}'.")
         return False, "No Passport"
