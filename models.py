@@ -36,18 +36,24 @@ random.seed(SEED)
 np.random.seed(SEED)
 
 from utilities.evaluate import evaluate
-from utilities.collect_data import collect_enriched
+from collect_data_new import collect_enriched
 from get_clean_dataframe import clean_dataframe
 
 from rules.trusted import RM_contact
 from rules.passportdate import check_passport_expiry
 from rules.names_check import check_names
 from rules.consistency import check_inconsistency
+from rules.email_check import check_email_name
+
 import sys
 
 if __name__ == "__main__":
 
-    rules = [check_passport_expiry, RM_contact, check_inconsistency]
+    rules = [check_passport_expiry, RM_contact, check_inconsistency, check_names]
+
+    # ------------------------------------------------------------------------------
+    # 1. Load pre-split datasets
+    # ------------------------------------------------------------------------------
 
     # Read mode from flags
     mode = "train"
@@ -57,8 +63,6 @@ if __name__ == "__main__":
     else:
         data = pd.read_csv(filename)
 
-    
-    
     validation_file = "enriched_" + mode + ".csv"
     if not os.path.exists("enriched_val.csv"):
         val_df = collect_enriched(mode="val", filename="enriched_val.csv", rules=rules)
@@ -67,11 +71,7 @@ if __name__ == "__main__":
     
     train_df = clean_dataframe(data)
     val_df = clean_dataframe(val_df)
-    # ------------------------------------------------------------------------------
-    # 1. Load pre-split datasets
-    # ------------------------------------------------------------------------------
-
-
+    
     categorical_features = [
         "inheritance_details_relationship", "investment_risk_profile",
         "investment_horizon", "investment_experience", "currency"
@@ -261,4 +261,3 @@ if __name__ == "__main__":
         details["trained on"] = categorical_features + numerical_features
         with open(f"saved_models/details_{model}_{timestamp}.json", 'w') as fp:
             json.dump(details, fp)
-        

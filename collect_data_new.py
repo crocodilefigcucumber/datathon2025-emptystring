@@ -12,8 +12,6 @@ from sklearn.decomposition import PCA
 def collect_enriched(mode: str, filename: str, rules: list) -> pd.DataFrame:
     n_rules = len(rules)
 
-    # Determine mode from sys.argv if provided
-    mode = "val"  # Default mode
     if len(sys.argv) > 1:
         if sys.argv[1].strip().lower() in ["--help", "-h"]:
             print("Usage: python main.py [mode]")
@@ -35,68 +33,69 @@ def collect_enriched(mode: str, filename: str, rules: list) -> pd.DataFrame:
     clients = sorted(clients)
     n_clients = len(clients)
 
-    # ------------------------------------------------------------
-    # 1. Compute PCA embeddings for all clients (before main loop)
-    # ------------------------------------------------------------
-    # Load the embedding model once
-    model_name = "sentence-transformers/paraphrase-MiniLM-L6-v2"
-    embedder = SentenceTransformer(model_name, device="mps")  # or "cuda" if available
+    if "embedding" in rules:
+        # ------------------------------------------------------------
+        # 1. Compute PCA embeddings for all clients (before main loop)
+        # ------------------------------------------------------------
+        # Load the embedding model once
+        model_name = "sentence-transformers/paraphrase-MiniLM-L6-v2"
+        embedder = SentenceTransformer(model_name, device="mps")  # or "cuda" if available
 
-    # Define maximum number of words per section chunk (to respect context window limits)
-    max_section_words = 100
+        # Define maximum number of words per section chunk (to respect context window limits)
+        max_section_words = 100
 
-    all_client_embeddings = []
-    for client in tqdm(clients, desc="Computing PCA embeddings"):
-        client_folder = os.path.join(dataset_path, client)
-        # We extract text only from keys starting with "client_description"
-        text_agg = ""
-        documents = list(pathlib.Path(client_folder).glob("*.json"))
-        for json_file in documents:
-            try:
-                with open(json_file, "r") as file:
-                    file_data = json.load(file)
-                    file_prefix = json_file.stem
-                    for key, value in file_data.items():
-                        if key.startswith("client_description"):
-                            if isinstance(value, dict):
-                                for nested_key, nested_value in value.items():
-                                    text_agg += f"{file_prefix}_{key}_{nested_key}: {str(nested_value).strip()}\n\n"
-                            else:
-                                text_agg += f"{file_prefix}_{key}: {str(value).strip()}\n\n"
-            except Exception as e:
-                print(f"Error processing file {json_file}: {str(e)}")
-        # Split the aggregated text into sections (using double-newline as the delimiter)
-        sections = [sec for sec in text_agg.strip().split("\n\n") if sec.strip()]
-        # Further split a section if it exceeds max_section_words
-        chunks = []
-        for section in sections:
-            words = section.split()
-            if len(words) > max_section_words:
-                for i in range(0, len(words), max_section_words):
-                    chunk = " ".join(words[i:i + max_section_words])
-                    chunks.append(chunk)
+        all_client_embeddings = []
+        for client in tqdm(clients, desc="Computing PCA embeddings"):
+            client_folder = os.path.join(dataset_path, client)
+            # We extract text only from keys starting with "client_description"
+            text_agg = ""
+            documents = list(pathlib.Path(client_folder).glob("*.json"))
+            for json_file in documents:
+                try:
+                    with open(json_file, "r") as file:
+                        file_data = json.load(file)
+                        file_prefix = json_file.stem
+                        for key, value in file_data.items():
+                            if key.startswith("client_description"):
+                                if isinstance(value, dict):
+                                    for nested_key, nested_value in value.items():
+                                        text_agg += f"{file_prefix}_{key}_{nested_key}: {str(nested_value).strip()}\n\n"
+                                else:
+                                    text_agg += f"{file_prefix}_{key}: {str(value).strip()}\n\n"
+                except Exception as e:
+                    print(f"Error processing file {json_file}: {str(e)}")
+            # Split the aggregated text into sections (using double-newline as the delimiter)
+            sections = [sec for sec in text_agg.strip().split("\n\n") if sec.strip()]
+            # Further split a section if it exceeds max_section_words
+            chunks = []
+            for section in sections:
+                words = section.split()
+                if len(words) > max_section_words:
+                    for i in range(0, len(words), max_section_words):
+                        chunk = " ".join(words[i:i + max_section_words])
+                        chunks.append(chunk)
+                else:
+                    chunks.append(section)
+            # Get embeddings for each chunk and mean-pool them to get the client embedding
+            if chunks:
+                chunk_embeddings = embedder.encode(chunks)
+                chunk_embeddings = np.array(chunk_embeddings)
+                client_embedding = np.mean(chunk_embeddings, axis=0)
             else:
-                chunks.append(section)
-        # Get embeddings for each chunk and mean-pool them to get the client embedding
-        if chunks:
-            chunk_embeddings = embedder.encode(chunks)
-            chunk_embeddings = np.array(chunk_embeddings)
-            client_embedding = np.mean(chunk_embeddings, axis=0)
-        else:
-            # If no text found, create a zero vector with the same dimension as the model's embedding dimension
-            client_embedding = np.zeros(embedder.get_sentence_embedding_dimension())
-        all_client_embeddings.append(client_embedding)
+                # If no text found, create a zero vector with the same dimension as the model's embedding dimension
+                client_embedding = np.zeros(embedder.get_sentence_embedding_dimension())
+            all_client_embeddings.append(client_embedding)
 
-    all_client_embeddings = np.array(all_client_embeddings)
-    k = 5  # number of principal components
-    pca = PCA(n_components=k)
-    reduced_embeddings = pca.fit_transform(all_client_embeddings)
-    df_pca = pd.DataFrame(
-        reduced_embeddings,
-        columns=[f"pc_{i+1}" for i in range(k)],
-        index=clients
-    ).reset_index().rename(columns={"index": "client_id"})
-    
+        all_client_embeddings = np.array(all_client_embeddings)
+        k = 5  # number of principal components
+        pca = PCA(n_components=k)
+        reduced_embeddings = pca.fit_transform(all_client_embeddings)
+        df_pca = pd.DataFrame(
+            reduced_embeddings,
+            columns=[f"pc_{i+1}" for i in range(k)],
+            index=clients
+        ).reset_index().rename(columns={"index": "client_id"})
+        
     # ------------------------------------------------------------
     # 2. Main loop: Collect enriched features (minimal changes from original)
     # ------------------------------------------------------------
@@ -122,7 +121,7 @@ def collect_enriched(mode: str, filename: str, rules: list) -> pd.DataFrame:
         for rule in rules:
             name = rule.__name__
             accept, comment = rule(client_folder)
-            enriched.loc[i, name] = accept
+            enriched.loc[i, name] = float(accept)
 
         # Process each JSON file to collect client data
         for json_file in documents:
@@ -145,8 +144,13 @@ def collect_enriched(mode: str, filename: str, rules: list) -> pd.DataFrame:
 
     # Convert list of dictionaries to DataFrame (client data)
     df = pd.DataFrame(all_data)
+
     # Merge PCA results into the DataFrame based on the client id (here stored in "folder_name")
-    df_final = df.merge(df_pca, left_on="folder_name", right_on="client_id", how="left")
+    if "embedding" in rules:
+        df_final = df.merge(df_pca, left_on="folder_name", right_on="client_id", how="left")
+    else:
+        df_final = df
+
     # Concatenate the enriched features (rule outputs)
     df_final = pd.concat([df_final, enriched], axis=1)
     
