@@ -3,6 +3,7 @@ import os
 import datetime
 from pathlib import Path
 from typing import Tuple
+import re
 
 
 def check_names(folder_dir: str) -> Tuple[bool, str]:
@@ -101,6 +102,8 @@ def check_names(folder_dir: str) -> Tuple[bool, str]:
         return False, "Account form missing last name"
 
     account_full_name = account_data["name"]
+    account_full_name_clean = re.sub(r"\s+", " ", account_full_name).strip()
+
     if not account_full_name:
         return False, "Account form missing full name"
 
@@ -115,7 +118,9 @@ def check_names(folder_dir: str) -> Tuple[bool, str]:
     if passport_full_name != account_full_name_recon:
         return False, "Passport and Account Form names do not match"
 
-    if account_full_name != account_full_name_recon:
+    if account_full_name_clean != account_full_name_recon:
+        print(f"Account form name: \n{account_full_name}")
+        print(f"Reconstructed name: \n{account_full_name_recon}")
         return False, "Account Form and Full name do not match in account form"
 
     # ----------CLIENT PROFILE----------

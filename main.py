@@ -92,6 +92,9 @@ if __name__ == "__main__":
     else:
         results_out.to_csv("emptystring.csv", sep=";", header=False)
 
-    print(results)
-    print(evaluate(results))
-    print(sum(results["Accept"] == "Reject"))
+    confus, false_negatives, false_positives, fp_rules = evaluate(results)
+    print(confus)
+    print("No. rejections:", sum(results["Accept"] == "Reject"))
+
+    for reason, clients in zip(fp_rules, false_positives):
+        print(f"False positive for {reason}: {clients}")
