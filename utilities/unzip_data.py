@@ -27,4 +27,19 @@ def extract_all_archives(directory):
 
 
 if __name__ == "__main__":
+    """
+    This script provides functionality to extract compressed archive files
+    from a specified directory. It supports `.tar`, `.tar.gz`, `.tgz`, and `.zip` formats.
+    Functions:
+        extract_all_archives(directory):
+            Iterates through all files in the given directory and extracts
+            supported archive files. Extracted `.tar`, `.tar.gz`, and `.tgz`
+            files are unpacked into the same directory, while `.zip` files
+            are extracted into a subdirectory named after the archive (excluding
+            the `.zip` extension).
+    Usage:
+        Run the script directly to extract all supported archives in the
+        "data/" directory:
+            python unzip_data.py
+    """
     extract_all_archives("data/")
