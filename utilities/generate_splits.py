@@ -32,7 +32,7 @@ if __name__ == "__main__":
     for client_dir in os.listdir(data_dir):
         client_path = os.path.join(data_dir, client_dir)
         if os.path.isdir(client_path):
-            file_paths.append(client_path)
+            file_paths.append(client_dir)
 
     # Shuffle file paths for random subsampling
     random.shuffle(file_paths)
