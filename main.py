@@ -42,7 +42,7 @@ if __name__ == "__main__":
         4. Apply validation rules to each client folder.
         5. Save the results to a CSV file.
     """
-    rules = [check_names]
+    rules = [check_names, check_passport_expiry]
 
     # Read mode from flags
     mode = "train"  # Default mode
@@ -92,6 +92,9 @@ if __name__ == "__main__":
     else:
         results_out.to_csv("emptystring.csv", sep=";", header=False)
 
-    print(results)
-    print(evaluate(results))
-    print(sum(results["Accept"] == "Reject"))
+    confus, false_negatives, false_positives, fp_rules = evaluate(results)
+    print(confus)
+    print("No. rejections:", sum(results["Accept"] == "Reject"))
+
+    for reason, clients in zip(fp_rules, false_positives):
+        print(f"False positive for {reason}: {clients}")

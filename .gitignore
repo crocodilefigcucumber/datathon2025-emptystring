@@ -16,3 +16,6 @@ enriched_*.csv
 #  Ignore .pyc
 *.pyc
 __pycache__/
+
+# Ignore api_key.txt
+api_key.txt
