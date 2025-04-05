@@ -17,5 +17,6 @@ enriched_*.csv
 *.pyc
 __pycache__/
 
-# Ignore api_key.txt
+# Ignore api keys
 api_key.txt
+openai_key.txt
