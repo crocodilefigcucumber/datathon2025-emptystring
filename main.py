@@ -7,6 +7,39 @@ from rules.passportdate import check_passport_expiry
 import sys
 
 if __name__ == "__main__":
+    """
+    Main script for processing client data and applying validation rules.
+    This script reads a dataset split file, processes client folders, and applies a set of rules
+    to determine whether each client folder is accepted or rejected. The results are saved to a CSV file.
+    Modules:
+        - pandas: For data manipulation and analysis.
+        - os: For interacting with the operating system.
+        - numpy: For numerical operations.
+        - sys: For handling command-line arguments.
+        - utilities.unzip_data.extract_all_archives: Custom module for extracting archives.
+        - rules.passportdate.check_passport_expiry: Custom rule for checking passport expiry.
+    Usage:
+        python main.py [mode]
+        mode: One of "train", "test", "val", "final".
+        - "train", "test", "val": Process the respective dataset split.
+        - "final": Not yet implemented.
+    Functions:
+        - check_passport_expiry(client_path): A rule function to validate client data.
+    Command-line Arguments:
+        - --help, -h: Display usage information.
+    Raises:
+        - ValueError: If an invalid mode is provided.
+        - NotImplementedError: If the "final" mode is used (not implemented).
+    Outputs:
+        - A CSV file containing the results of the validation for each client folder.
+        The file is named based on the mode (e.g., "train_results.csv").
+    Processing Steps:
+        1. Read the mode from command-line arguments or default to "train".
+        2. Validate the mode and determine the dataset and split file paths.
+        3. Load the list of client folders from the split file.
+        4. Apply validation rules to each client folder.
+        5. Save the results to a CSV file.
+    """
     rules = [check_passport_expiry]
 
     # Read mode from flags
@@ -47,6 +80,15 @@ if __name__ == "__main__":
             if not accept:
                 results.at[client_name, "accept"] = "Reject"
                 results.at[client_name, "comment"] += ", " + comment
+
+    # output results in the correct format
+    results_out = results[["accept"]].copy()
+    results_out.index.name = None  # remove index name
+
+    if mode in ["train", "test", "val"]:
+        results_out.to_csv(f"{mode}_results.csv", sep=";", header=False)
+    else:
+        results_out.to_csv("empty.csv", sep=";", header=False)
 
     print(results)
     print(sum(results["accept"] == "Reject"))
