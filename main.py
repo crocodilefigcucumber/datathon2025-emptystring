@@ -22,6 +22,7 @@ if __name__ == "__main__":
         raise ValueError("Invalid mode. Please enter one of: train, test, val, final.")
 
     if mode in ["train", "test", "val"]:
+        dataset_path = "data/"
         split_path = "splits/" + mode + "_split.csv"
     else:
         raise NotImplementedError("Final mode not yet implemented.")
@@ -37,14 +38,15 @@ if __name__ == "__main__":
         print("No folders found.")
 
     for client_name, _ in results.iterrows():
-        print(f"Processing folder: {client_name}")
+        client_path = os.path.join(dataset_path, client_name)
+        print(f"Processing folder: {client_path}")
 
-        results.at[client_name, "accept"] = "accept"
+        results.at[client_name, "accept"] = "Accept"
         for func in rules:
-            accept, comment = func(client_name)
+            accept, comment = func(client_path)
             if not accept:
-                results.at[client_name, "accept"] = "reject"
+                results.at[client_name, "accept"] = "Reject"
                 results.at[client_name, "comment"] += ", " + comment
 
     print(results)
-    print(sum(results["accept"] == "reject"))
+    print(sum(results["accept"] == "Reject"))
