@@ -10,7 +10,7 @@ def collect_to_csv(clients: list, filename: str) -> pd.DataFrame:
     all_data = []
 
     for client in clients:
-        client_folder = os.path.join(".", client)
+        client_folder = os.path.join("./data", client)
         client_data = {"folder_name": client}  # Initialize with folder name
         
         # Get all json documents
