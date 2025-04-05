@@ -4,3 +4,8 @@ data/*
 
 # Ignore ipython notebooks
 *.ipynb
+
+# Ignore outputs from main.py if not final result
+train_results.csv
+test_results.csv
+val_results.csv
