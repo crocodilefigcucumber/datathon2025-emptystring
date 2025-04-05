@@ -27,12 +27,12 @@ if __name__ == "__main__":
     test_ratio = 0.05
 
     # Collect all file paths from client directories
+
     file_paths = []
     for client_dir in os.listdir(data_dir):
         client_path = os.path.join(data_dir, client_dir)
         if os.path.isdir(client_path):
-            for file_name in os.listdir(client_path):
-                file_paths.append(os.path.join(client_path, file_name))
+            file_paths.append(client_path)
 
     # Shuffle file paths for random subsampling
     random.shuffle(file_paths)
