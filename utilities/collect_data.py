@@ -31,9 +31,9 @@ def collect_enriched(mode: str, filename: str, rules: list) -> pd.DataFrame:
     n_clients = len(clients)
     enriched = pd.DataFrame(data=np.zeros((n_clients, n_rules)))
     enriched.columns = [rule.__name__ for rule in rules]
-    enriched.index = clients
     all_data = []
 
+    i = 0
     for client in clients:
         client_folder = os.path.join(dataset_path, client)
         client_data = {"folder_name": client}  # Initialize with folder name
@@ -50,7 +50,7 @@ def collect_enriched(mode: str, filename: str, rules: list) -> pd.DataFrame:
         for rule in rules:
             name = rule.__name__
             accept, comment = rule(client_folder)
-            enriched.loc[client, name] = (accept)
+            enriched.loc[i, name] = (accept)
 
         # write DataFrame
         for json_file in documents:
@@ -75,12 +75,14 @@ def collect_enriched(mode: str, filename: str, rules: list) -> pd.DataFrame:
             except Exception as e:
                 print(f"Error processing file {json_file}: {str(e)}")
 
+        i += 1
+
         # Add this folder's data to the list
         all_data.append(client_data)
 
     # Convert list of dictionaries to DataFrame
     df = pd.DataFrame(all_data)
-    df_enriched = pd.concat([df, enriched], axis=1)
+    df_enriched = pd.concat([df, enriched], axis=1, ignore_index=True)
     df_enriched.to_csv(filename, index=False)
     return df_enriched
 
