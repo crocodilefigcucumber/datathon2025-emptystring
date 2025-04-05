@@ -20,12 +20,15 @@ if __name__ == "__main__":
     if mode not in ["train", "test", "val", "final"]:
         raise ValueError("Invalid mode. Please enter one of: train, test, val, final.")
 
-    # get list of clients
-    dataset_path = "splits/" + mode + "_split.csv"
+    if mode in ["train", "test", "val"]:
+        # get list of clients
+        split_path = "splits/" + mode + "_split.csv"
 
-    clients = pd.read_csv(dataset_path)["file_path"].tolist()
+    clients = pd.read_csv(split_path)["file_path"].tolist()
     clients = sorted(clients)
     n_clients = len(clients)
+
+    dataset_path = "data/"
 
     # set up results table
     results = pd.DataFrame(data=np.zeros((n_clients, 3)))
@@ -40,13 +43,13 @@ if __name__ == "__main__":
     i = 0
     # check for all clients
     for folder in clients:
-        folder_path = os.path.join(dataset_path, folder)
+        # folder_path = os.path.join(dataset_path, folder)
         print(f"Processing folder: {folder}")
 
         # apply all rules for rejection
         results.loc[i, "accept"] = "accept"
         for func in rules:
-            accept, comment = func(folder_path)
+            accept, comment = func(folder)
 
             # update acceptation record
             if not accept:
