@@ -22,43 +22,29 @@ if __name__ == "__main__":
         raise ValueError("Invalid mode. Please enter one of: train, test, val, final.")
 
     if mode in ["train", "test", "val"]:
-        # get list of clients
         split_path = "splits/" + mode + "_split.csv"
     else:
         raise NotImplementedError("Final mode not yet implemented.")
 
     clients = pd.read_csv(split_path)["file_path"].tolist()
     clients = sorted(clients)
-    n_clients = len(clients)
 
-    # set up results table
-    results = pd.DataFrame(data=np.zeros((n_clients, 3)))
-    results.columns = ["client_name", "accept", "comment"]
-    results["client_name"] = clients
-    results["accept"] = [""] * n_clients
-    results["comment"] = [""] * n_clients
+    results = pd.DataFrame(index=clients, columns=["accept", "comment"])
+    results["accept"] = ""
+    results["comment"] = ""
 
     if not clients:
-        print(f"No folders found.")
+        print("No folders found.")
 
-    i = 0
-    # check for all clients
-    for folder in clients:
-        # folder_path = os.path.join(dataset_path, folder)
-        print(f"Processing folder: {folder}")
+    for client_name, _ in results.iterrows():
+        print(f"Processing folder: {client_name}")
 
-        # apply all rules for rejection
-        results.loc[i, "accept"] = "accept"
+        results.at[client_name, "accept"] = "accept"
         for func in rules:
-            accept, comment = func(folder)
-
-            # update acceptation record
+            accept, comment = func(client_name)
             if not accept:
-                results.loc[i, "accept"] = "reject"
-                # record reason for rejection
-                results.loc[i, "comment"] = results["comment"][i] + ", " + comment
-        i += 1
+                results.at[client_name, "accept"] = "reject"
+                results.at[client_name, "comment"] += ", " + comment
 
-print(results)
-
-print(sum(results["accept"] == "reject"))
+    print(results)
+    print(sum(results["accept"] == "reject"))
