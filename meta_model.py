@@ -36,10 +36,10 @@ from rules.names_check import check_names
 from rules.consistency import check_inconsistency
 from rules.adult_graduate import check_education_graduation
 
+mode="final"
 rules = [check_passport_expiry, RM_contact, check_inconsistency, check_names, check_education_graduation]
-data = load_or_create(filename="enriched_csv.csv", rules=rules, embedding=5, mode="train")
+data = load_or_create(filename="probe_csv.csv", rules=rules, embedding=5, mode=mode)
 
-print(data["label_label"])
 
 # %%
 
@@ -122,6 +122,49 @@ pred_df.to_csv(output_file)
 print("Predictions saved to", output_file)
 print(pred_df)
 
+def majority_vote(df, threshold=0.5):
+    
+    frac_ones = df.mean(axis=1)
+    return (frac_ones >= threshold).astype(int)
+
+if mode == "final":
+  majority_vote_preds = majority_vote(pred_df, threshold=0.5)
+  
+  from rules.flash_prompt import check_discrepancy_via_llm
+  import pathlib
+  from tqdm import tqdm
+
+  accepted_clients = majority_vote_preds[majority_vote_preds == 1].index.tolist()
+
+  # apply llms to accepted clients
+
+  if mode == "train":
+      dataset_path = "data/"
+  elif mode == "final":
+      dataset_path = "final/"
+
+  for client in tqdm(accepted_clients):
+    client_folder = os.path.join(dataset_path, client)
+    client_data = {"folder_name": client}  # Initialize with folder name
+
+    # Get all json documents
+    documents = list(pathlib.Path(client_folder).glob("*.json"))
+
+    if not documents:
+        print(f"No JSON files found in folder: {client}")
+        continue
+    
+    results = check_discrepancy_via_llm(client_folder)
+    
+    majority_vote_preds[client] = int(sum(results) > 0)
+
+  majority_vote_preds = majority_vote_preds.replace({1: "Accept", 0: "Reject"})
+  if mode in ["train", "test", "val"]:
+    majority_vote_preds.to_csv(f"meta_{mode}_results.csv", sep=";", header=False)
+  else:
+    majority_vote_preds.to_csv("emptystring.csv", sep=";", header=False)
+
+
 # -------------------------
 # 5. Learn weighted average using logistic regression
 # -------------------------
@@ -161,10 +204,46 @@ estimates = linear.predict(predictions)
 print(accuracy_score(target, estimates))
 
 
-def majority_vote(df, threshold=0.5):
-    
-    frac_ones = df.mean(axis=1)
-    return (frac_ones >= threshold).astype(int)
+# Perform majority vote prediction
+majority_vote_preds = majority_vote(predictions, threshold=0.5)
+
+# Evaluate accuracy of majority vote predictions
+majority_vote_accuracy = accuracy_score(target, majority_vote_preds)
+print(f"Majority Vote Accuracy: {majority_vote_accuracy}")
+
+from rules.flash_prompt import check_discrepancy_via_llm
+import pathlib
+from tqdm import tqdm
+
+accepted_clients = majority_vote_preds[majority_vote_preds == 1].index.tolist()
+
+# apply llms to accepted clients
+
+if mode == "train":
+    dataset_path = "data/"
+elif mode == "final":
+    dataset_path = "final/"
+
+for client in tqdm(accepted_clients):
+  client_folder = os.path.join(dataset_path, client)
+  client_data = {"folder_name": client}  # Initialize with folder name
+
+  # Get all json documents
+  documents = list(pathlib.Path(client_folder).glob("*.json"))
+
+  if not documents:
+      print(f"No JSON files found in folder: {client}")
+      continue
+  
+  results = check_discrepancy_via_llm(client_folder)
+  
+  majority_vote_preds[client] = int(sum(results) > 0)
+
+majority_vote_preds = majority_vote_preds.replace({1: "Accept", 0: "Reject"})
+if mode in ["train", "test", "val"]:
+  majority_vote_preds.to_csv(f"meta_{mode}_results.csv", sep=";", header=False)
+else:
+  majority_vote_preds.to_csv("emptystring.csv", sep=";", header=False)
 
 import matplotlib.pyplot as plt
 
@@ -192,6 +271,7 @@ def plot_thresholds(df, y_true, thresholds=np.linspace(0, 1, 101)):
     plt.show()
 
 plot_thresholds(predictions, target, thresholds=np.linspace(0, 1, 101))
+
 # %%
 # Function: Uncertainty Quantification
 def uncertainty_quantification(df):

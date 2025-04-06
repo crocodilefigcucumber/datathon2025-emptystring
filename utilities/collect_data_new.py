@@ -33,24 +33,18 @@ def load_or_create(filename: str, rules: list, embedding: int, mode: str) -> pd.
 def collect_enriched(mode: str, filename: str, rules: list, embedding: bool) -> pd.DataFrame:
     n_rules = len(rules)
 
-    if len(sys.argv) > 1:
-        if sys.argv[1].strip().lower() in ["--help", "-h"]:
-            print("Usage: python main.py [mode]")
-            print("mode: One of train, test, val, final")
-            sys.exit(0)
-        mode = sys.argv[1].strip().lower()
-
-    if mode not in ["train", "test", "val", "final"]:
-        raise ValueError("Invalid mode. Please enter one of: train, test, val, final.")
-
     if mode in ["train", "test", "val"]:
         dataset_path = "data/"
         split_path = "splits/" + mode + "_split.csv"
+
+        clients = pd.read_csv(split_path)["file_path"].tolist()
     else:
-        raise NotImplementedError("Final mode not yet implemented.")
+        dataset_path = "final/"
+        clients = os.listdir(dataset_path)
+        clients = [client for client in clients if "zip" not in client]
 
     # Read client list from CSV and sort them (this list is used for both PCA and enriched features)
-    clients = pd.read_csv(split_path)["file_path"].tolist()
+    
     clients = sorted(clients)
     n_clients = len(clients)
 
