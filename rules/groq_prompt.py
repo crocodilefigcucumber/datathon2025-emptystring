@@ -28,7 +28,7 @@ def send_full_discrepancy_request(
     ground_truth: dict,
     summary_text: str,
     api_key: str,
-    model: str = "mistral-7b",
+    model: str = "mistral-saba-24b",
     max_tokens: int = 1024,
     temperature: float = 0.0,
     top_p: float = 1.0,
