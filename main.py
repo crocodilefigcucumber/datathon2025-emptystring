@@ -1,13 +1,17 @@
 import pandas as pd
 import os
 import numpy as np
+import seaborn
+import matplotlib.pyplot as plt
 
 from utilities.unzip_data import extract_all_archives
 from utilities.evaluate import evaluate
+
+from rules.trusted import RM_contact
 from rules.passportdate import check_passport_expiry
 from rules.names_check import check_names
-from rules.nationality_check import check_nationality_match
 from rules.consistency import check_inconsistency
+from rules.adult_graduate import check_education_graduation
 
 import sys
 
@@ -45,8 +49,13 @@ if __name__ == "__main__":
         4. Apply validation rules to each client folder.
         5. Save the results to a CSV file.
     """
-    rules = [check_inconsistency, check_names, check_passport_expiry]
-    verbose = False  # during loop over clients
+    rules = [
+        check_passport_expiry,
+        check_inconsistency,
+        check_names,
+        # check_education_graduation,
+    ]
+    verbose = True  # during loop over clients
 
     # Read mode from flags
     mode = "train"  # Default mode
@@ -98,20 +107,28 @@ if __name__ == "__main__":
         results_out.to_csv("emptystring.csv", sep=";", header=False)
 
     confus, false_negatives, false_positives, fp_rules = evaluate(results)
-    print(confus)
+
+    # Normalize the confusion matrix to [0, 1]
+    confus_normalized = confus / confus.sum()
+
+    seaborn.heatmap(confus_normalized, annot=True, cmap="rocket")
+    plt.savefig(f"plots/{mode}_confusion_matrix.png")
+    plt.close()
+
     print("No. rejections:", sum(results["Accept"] == "Reject"))
 
-    print(10 * "#" + "False Negatives" + 10 * "#")
-    # Write false negatives to a CSV file
-    with open("false_negatives.csv", "w") as f:
-        f.write("Client\n")
+    if verbose:
+        print(10 * "#" + "False Negatives" + 10 * "#")
+        # Write false negatives to a CSV file
+        with open("false_negatives.csv", "w") as f:
+            f.write("Client\n")
+            for client in false_negatives:
+                f.write(f"{client}\n")
+
+        # Print false negatives to the console
         for client in false_negatives:
-            f.write(f"{client}\n")
+            print(f"False negative for {client}")
 
-    # Print false negatives to the console
-    for client in false_negatives:
-        print(f"False negative for {client}")
-
-    print(10 * "#" + "False Positives" + 10 * "#")
-    for reason, clients in zip(fp_rules, false_positives):
-        print(f"False positive for {reason}: {clients}")
+        print(10 * "#" + "False Positives" + 10 * "#")
+        for reason, clients in zip(fp_rules, false_positives):
+            print(f"False positive for {reason}: {clients}")

@@ -44,16 +44,14 @@ from utilities.evaluate import evaluate
 from collect_data_new import collect_enriched, load_or_create
 from get_clean_dataframe import clean_dataframe
 
-from rules.trusted import RM_contact
 from rules.passportdate import check_passport_expiry
 from rules.names_check import check_names
 from rules.consistency import check_inconsistency
-from rules.adult_graduate import check_education_graduation
 
 
 if __name__ == "__main__":
 
-    rules = [check_passport_expiry, RM_contact, check_inconsistency, check_names, check_education_graduation]
+    rules = [check_passport_expiry, check_inconsistency, check_names]
     embedding = True
     # ------------------------------------------------------------------------------
     # 1. Load pre-split datasets
@@ -97,7 +95,7 @@ if __name__ == "__main__":
     
     for rule in rules:
         train_df[rule.__name__].astype("category")
-        
+
     for rule in rules:
         categorical_features.append(rule.__name__)
 
