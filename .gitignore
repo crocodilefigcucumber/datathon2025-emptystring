@@ -21,3 +21,4 @@ __pycache__/
 api_key.txt
 openai_key.txt
 gemini_api_key.txt
+groq_api_key.txt
