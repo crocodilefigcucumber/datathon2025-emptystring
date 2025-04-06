@@ -36,7 +36,7 @@ random.seed(SEED)
 np.random.seed(SEED)
 
 from utilities.evaluate import evaluate
-from utilities.collect_data_new import collect_enriched, load_or_create
+from collect_data_new import collect_enriched, load_or_create
 from get_clean_dataframe import clean_dataframe
 
 from rules.trusted import RM_contact
@@ -49,7 +49,7 @@ import sys
 
 if __name__ == "__main__":
 
-    rules = [check_passport_expiry, RM_contact, check_inconsistency, check_names, check_email_name]
+    rules = [check_passport_expiry, RM_contact, check_inconsistency, check_names]
     embedding = True
     # ------------------------------------------------------------------------------
     # 1. Load pre-split datasets
@@ -59,12 +59,20 @@ if __name__ == "__main__":
     mode = "train"
     filename =  "enriched_" + mode + ".csv"
 
-    data = load_or_create(filename=filename, rules=rules, embedding=5, mode="train")
-    val_df = load_or_create(filename="enriched_val.csv", rules=rules, embedding=5, mode="val")
+    data = load_or_create(filename=filename,
+                          rules=rules,
+                          embedding=5,
+                          mode="train",
+                          llm = True)
+    val_df = load_or_create(filename="enriched_val.csv",
+                            rules=rules,
+                            embedding=5,
+                            mode="val",
+                            llm=True)
 
     train_df = clean_dataframe(data)
     val_df = clean_dataframe(val_df)
-      
+    """  
     categorical_features = [
         "inheritance_details_relationship", "investment_risk_profile",
         "investment_horizon", "investment_experience", "currency"
@@ -121,11 +129,11 @@ if __name__ == "__main__":
     # 4. Define candidate models (diverse and high-performing on tabular data)
     # ------------------------------------------------------------------------------
     models = {
-        "RandomForest":    RandomForestClassifier(random_state=SEED),
-        "LightGBM":        LGBMClassifier(random_state=SEED),
+        #"RandomForest":    RandomForestClassifier(random_state=SEED),
+        #"LightGBM":        LGBMClassifier(random_state=SEED),
         #"Lasso":           LogisticRegression(penalty='l1', solver='liblinear', random_state=SEED),
         #"Ridge":           RidgeClassifier(random_state=SEED),
-        #"SVM":             SVC(probability=True, random_state=SEED),
+        "SVM":             SVC(probability=True, random_state=SEED),
         #"KNN":             KNeighborsClassifier(),
         #"GradientBoosting":GradientBoostingClassifier(random_state=SEED),
         #"AdaBoost":        AdaBoostClassifier(random_state=SEED),
@@ -154,7 +162,7 @@ if __name__ == "__main__":
             "classifier__alpha": uniform(0.001, 10.0),
         },
         "SVM": {
-            "classifier__C": uniform(0.001, 10.0),
+            "classifier__C": uniform(0.01, 5),
             "classifier__kernel": ["linear", "rbf"],
         },
         "KNN": {
@@ -208,7 +216,7 @@ if __name__ == "__main__":
         random_search = RandomizedSearchCV(
             estimator=pipeline,
             param_distributions=search_params,
-            n_iter=10,  # number of parameter settings sampled
+            n_iter=3,  # number of parameter settings sampled
             scoring="accuracy",
             cv=kfold,
             random_state=SEED,
@@ -257,3 +265,4 @@ if __name__ == "__main__":
         details["trained on"] = categorical_features + numerical_features
         with open(f"saved_models/details_{model}_{timestamp}.json", 'w') as fp:
             json.dump(details, fp)
+    """
