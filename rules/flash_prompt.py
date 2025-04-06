@@ -49,20 +49,14 @@ def send_full_discrepancy_request(
         },
     }
 
-    tick = time.time()
     response = requests.post(endpoint, headers=headers, json=payload)
-    tock = time.time()
-    print("Time taken for API call:", tock - tick)
 
     if response.status_code != 200:
         raise Exception(
             f"Gemini API request failed with status code {response.status_code}: {response.text}"
         )
 
-    tick = time.time()
     data = response.json()
-    tock = time.time()
-    print("Time taken for JSON parsing:", tock - tick)
 
     try:
         output_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
@@ -108,7 +102,7 @@ def check_discrepancy_via_llm(folder_dir):
     Returns:
         list: A list of booleans indicating whether a discrepancy was found for each pair.
     """
-    tick = time.time()
+
     out = []
     desc_dict = {}
     client_dict = {}
@@ -177,6 +171,4 @@ def check_discrepancy_via_llm(folder_dir):
                 result = False
             out.append(result)
 
-    tock = time.time()
-    print("Total time taken:", tock - tick)
     return out
