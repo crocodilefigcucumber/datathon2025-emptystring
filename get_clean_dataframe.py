@@ -2,22 +2,7 @@ import pandas as pd
 import numpy as np
 
 def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-
-    #variables that need embedding: client_profile employment_history, client_profile_inheritance_details_profession, cleint_profile_real_estate_details, client_profile_preferred markets, client_description
-    categorical_features = [
-        "passport_gender", "passport_country", "passport_country_code", "passport_nationality",
-        "client_profile_country_of_domicile", "client_profile_nationality", "client_profile_gender",
-        "client_profile_marital_status", "client_profile_inheritance_details_relationship",
-        "client_profile_investment_risk_profile", "client_profile_investment_horizon",
-        "client_profile_investment_experience", "client_profile_type_of_mandate",
-        "client_profile_currency", "account_form_currency", "account_form_country_of_domicile"
-    ]
-    date_features = ["passport_birth_date", "passport_passport_issue_date", "passport_passport_expiry_date", "client_profile_birth_date", "client_profile_passport_issue_date", 
-                    "client_profile_passport_expiry_date", "client_profile_inheritance_details_inheritance_year"]
-
     date_features  = [col for col in df.columns if ('date' in col.lower() or "year" in col.lower())]
-    numerical_features = ["client_profile_aum_savings", "client_profile_aum_inheritance", "client_profile_aum_real_estate_value"]
-    df[categorical_features] = df[categorical_features].astype('category')
 
     for col in date_features:
         df[col] = pd.to_datetime(df[col], errors = 'coerce')
@@ -50,8 +35,3 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df.drop(columns=cols_to_drop, inplace=True)
 
     return df
-    categorical = ["gender", "country", "country_code", "nationality", "country_of_domicile", "marital_status",
-    "inheritance_details_relationship", "investment_risk_profile", "investment_horizon",
-    "investment_experience", "type_of_mandate", "currency"]
-
-    numerical = ["aum_savings", "aum_inheritance", "aum_real_estate_value"]
