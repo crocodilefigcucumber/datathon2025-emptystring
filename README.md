@@ -22,7 +22,8 @@ We designed a modular pipeline that captures inconsistencies through multiple co
 - **Rule-Based Matching:** Symbolic comparison of structured fields (e.g. phone number, nationality, address) across forms  
 - **LLM-Based Detection:** Uses a language model to detect semantic and textual inconsistencies in free-form client descriptions  
 - **ML Classifiers:** Supervised models trained to detect subtle data patterns and learn from intermediate signals  
-- **Ensemble Aggregator:** Final decision is made by combining all sources of evidence in a robust way  
+- **Ensemble Aggregator:** Final decision is made by combining all sources of evidence in a robust way
+- **Embedding Based Knowledge** Text knowledge is incorporated via embeddings, pca 
 
 This approach offers:
 - High precision on hard symbolic logic  
