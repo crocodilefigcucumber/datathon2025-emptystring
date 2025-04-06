@@ -9,6 +9,92 @@ from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
 
+sys.path.append('../rules')
+from rules.openai_prompt import check_discrepancy_via_llm
+
+def get_llm_enriched(mode: str) -> pd.DataFrame:
+    # check if llm_file already present
+    #       llm_enriched_{mode}.csv
+    filename = f"llm_enriched_{mode}.csv"
+    if len(sys.argv) > 1:
+        if sys.argv[1].strip().lower() in ["--help", "-h"]:
+            print("Usage: python main.py [mode]")
+            print("mode: One of train, test, val, final")
+            sys.exit(0)
+        mode = sys.argv[1].strip().lower()
+
+    if mode not in ["train", "test", "val", "final"]:
+        raise ValueError("Invalid mode. Please enter one of: train, test, val, final.")
+
+    if mode in ["train", "test", "val"]:
+        dataset_path = "data/"
+        split_path = "splits/" + mode + "_split.csv"
+    else:
+        raise NotImplementedError("Final mode not yet implemented.")
+    
+    if not os.path.exists(filename):
+        # generate new llm enrichment data
+        clients = pd.read_csv(split_path)["file_path"].tolist()
+        clients = sorted(clients)[:3]
+        llm_columns = llm_enriched(clients, dataset_path, filename)
+    else:
+        # load from file
+        llm_columns = pd.read_csv(filename)
+    return llm_columns
+
+def llm_enriched(clients: list, dataset_path: str, filename: str) -> pd.DataFrame:
+    n_clients = len(clients)
+    enriched = pd.DataFrame(data=np.zeros((n_clients, 3)))
+    enriched.columns = ["higher_education_llm", "employment_history_llm", "financial_llm"]
+
+    i = 0
+    for client in tqdm(clients, desc="Generating llm enrichments"):
+        client_folder = os.path.join(dataset_path, client)
+        
+        # call llm api
+        results = check_discrepancy_via_llm(client_folder)
+
+        enriched.loc[i] = [int(result) for result in results]
+    i += 1 
+
+    enriched.to_csv(filename)
+    return enriched
+
+def load_or_create(filename: str, rules: list, embedding: int, mode: str, llm: bool=False) -> pd.DataFrame:
+    if not os.path.exists(filename):
+        data = collect_enriched(mode=mode, filename=filename, rules=rules, embedding=embedding)
+        print("no save found, collecting data")
+    else:
+        data = pd.read_csv(filename)
+        print("file loaded, checking completeness")
+        old_data = True
+        # check rule columns present
+        for rule in rules:
+            if rule.__name__ not in data.columns:
+                old_data = False
+        
+        # check embedding columns present
+        if embedding > 0:
+            for i in range(embedding):
+                if f"pc_{i+1}" not in data.columns:
+                    old_data = False
+        # check llm columns
+        if llm:
+            llm_data = True
+            for llm_rule in ["higher_education_llm", "employment_history_llm", "financial_llm"]:
+                if llm_rule not in data.columns:
+                    llm_data = False
+        # reload data if necessary
+        if not old_data:
+            print("data incomplete, collecting data")
+            data = collect_enriched(mode=mode, filename=filename, rules=rules, embedding=embedding)
+    # generate llm data separately
+    if not llm_data:
+        llm_columns = get_llm_enriched(mode)
+        data = pd.concat([data, llm_columns], axis=1)
+    return data
+
+
 def collect_enriched(mode: str, filename: str, rules: list, embedding: bool) -> pd.DataFrame:
     n_rules = len(rules)
 
