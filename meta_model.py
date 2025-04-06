@@ -19,6 +19,7 @@
 import os
 import pandas as pd
 import joblib
+import numpy as np
 
 from utilities.unzip_data import extract_all_archives
 directory = "./final"
@@ -45,7 +46,7 @@ print(data["label_label"])
 # -------------------------
 # Specify the timestamp of the models to load
 # -------------------------
-timestamp_to_load = "08:42"  # Change this to your desired timestamp
+timestamp_to_load = "09:50"  # Change this to your desired timestamp
 
 # -------------------------
 # 1. Load the test dataset
@@ -107,7 +108,7 @@ for model_file in model_files:
     predictions[model_name] = preds
 
 for rule in rules:
-    predictions[rule.__name__] = test_df[rule.__name__]
+    predictions[rule.__name__] = np.array(test_df[rule.__name__])
 
 
 # -------------------------
@@ -127,10 +128,34 @@ print(pred_df)
 from sklearn.linear_model import LogisticRegression
 
 predictors = pred_df
-target = test_df["label_label"]
-model = LogisticRegression(solver='lbfgs', max_iter=1000)
-model.fit(predictors, target)
-print(model.weights)
+target = test_df["label_label"].replace({"Accept":  0, "Reject": 1})
+linear = LogisticRegression(solver='lbfgs', max_iter=1000)
+linear.fit(predictors, target)
+print(linear.coef_)
+
+
+test_data = load_or_create(filename="enriched_test_csv.csv", rules=rules, embedding=5, mode="test")
+X_test = test_data[features]
+predictions = {}
+
+for model_file in model_files:
+    model_path = os.path.join(model_folder, model_file)
+    model = joblib.load(model_path)
+    
+    # The pipeline includes preprocessing, so we can directly call predict on X_test.
+    preds = model.predict(X_test)
+    
+    # Extract the model name from the filename.
+    # Assuming format: {model_name}_{timestamp}_model.pkl
+    model_name = model_file.split("_")[0]
+    predictions[model_name] = preds
+
+for rule in rules:
+    predictions[rule.__name__] = test_df[rule.__name__]
+
+predictions = pd.DataFrame(predictions, index=test_data["client_id"])
+target = test_data["label_label"].replace({"Accept":  0, "Reject": 1})
+linear.predict(predictions)
 
 
 
@@ -149,14 +174,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score
 from sklearn.linear_model import LogisticRegression
 
-# %%
-seed = 42
 
-
-np.random.seed(42)
-
-# Create DataFrame of predictions
-df = pred_df.copy()
 
 
 # %%
