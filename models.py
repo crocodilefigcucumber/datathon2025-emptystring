@@ -73,7 +73,26 @@ if __name__ == "__main__":
 
     train_df = clean_dataframe(data)
     val_df = clean_dataframe(val_df)
-    """  
+
+    filled = train_df["higher_education_llm"].notnull()
+    clients = train_df["folder_name"][filled]
+    results = {}
+    for llm_col in ["higher_education_llm" , "employment_history_llm", "financial_llm"]:
+        print(llm_col)
+        res = pd.DataFrame(data=np.zeros((len(clients), 2)))
+        res.index = clients
+        res.columns = ["Accept", "comment"]
+        accept = (train_df[llm_col] == 1)[filled]
+
+        res["Accept"] = list(accept.replace({False: "Accept", True: "Reject"}))
+        res["comment"] = [""]*len(clients)
+
+        confus, false_negatives, false_positives, fp_rules = evaluate(res)
+        print(confus)
+
+
+
+    """
     categorical_features = [
         "inheritance_details_relationship", "investment_risk_profile",
         "investment_horizon", "investment_experience", "currency"
