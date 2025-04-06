@@ -8,6 +8,10 @@ Client onboarding often involves collecting the same information across multiple
 
 Our solution automates discrepancy detection across structured and free-form data using a layered ensemble approach, ensuring more reliable onboarding decisions in real-world banking pipelines.
 
+### Explainability
+
+A key strength of our solution is its explainability. Each rejection decision made by the ensemble can be fully traced back to its contributing components. Whether it's a rule-based mismatch, an LLM-detected inconsistency, or an ML classifier signal, the ensemble provides a clear breakdown of the evidence leading to the final decision. This transparency ensures trust and accountability in real-world applications.
+
 ---
 
 ### Approach Overview
