@@ -9,6 +9,27 @@ from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
 
+def load_or_create(filename: str, rules: list, embedding: int, mode: str) -> pd.DataFrame:
+    if not os.path.exists(filename):
+        data = collect_enriched(mode=mode, filename=filename, rules=rules, embedding=embedding)
+        print("no save found, collecting data")
+    else:
+        data = pd.read_csv(filename)
+        print("file loaded, checking completeness")
+        old_data = True
+        for rule in rules:
+            if rule.__name__ not in data.columns:
+                old_data = False
+        if embedding > 0:
+            for i in range(embedding):
+                if f"pc_{i+1}" not in data.columns:
+                    old_data = False
+        if not old_data:
+            print("data incomplete, collecting data")
+            data = collect_enriched(mode=mode, filename=filename, rules=rules, embedding=embedding)
+    return data
+
+
 def collect_enriched(mode: str, filename: str, rules: list, embedding: bool) -> pd.DataFrame:
     n_rules = len(rules)
 
