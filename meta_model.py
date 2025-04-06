@@ -126,6 +126,7 @@ print(pred_df)
 # 5. Learn weighted average using logistic regression
 # -------------------------
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import accuracy_score
 
 predictors = pred_df
 target = test_df["label_label"].replace({"Accept":  0, "Reject": 1})
@@ -135,6 +136,7 @@ print(linear.coef_)
 
 
 test_data = load_or_create(filename="enriched_test_csv.csv", rules=rules, embedding=5, mode="test")
+test_data = clean_dataframe(test_data)
 X_test = test_data[features]
 predictions = {}
 
@@ -151,40 +153,45 @@ for model_file in model_files:
     predictions[model_name] = preds
 
 for rule in rules:
-    predictions[rule.__name__] = test_df[rule.__name__]
+    predictions[rule.__name__] = np.array(X_test[rule.__name__])
 
 predictions = pd.DataFrame(predictions, index=test_data["client_id"])
 target = test_data["label_label"].replace({"Accept":  0, "Reject": 1})
-linear.predict(predictions)
+estimates = linear.predict(predictions)
+print(accuracy_score(target, estimates))
 
 
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score
-from sklearn.linear_model import LogisticRegression
-
-
-
-
-# %%
-# Function: Majority Vote
 def majority_vote(df, threshold=0.5):
     
     frac_ones = df.mean(axis=1)
     return (frac_ones >= threshold).astype(int)
 
+import matplotlib.pyplot as plt
 
+def plot_thresholds(df, y_true, thresholds=np.linspace(0, 1, 101)):
+    """
+    Evaluate and plot accuracy over a range of thresholds for majority voting.
+    
+    Parameters:
+      df: DataFrame containing model predictions.
+      y_true: Ground truth labels.
+      thresholds: Array of thresholds to test.
+    """
+    accuracies = []
+    for thresh in thresholds:
+        preds = majority_vote(df, threshold=thresh)
+        acc = accuracy_score(y_true, preds)
+        accuracies.append(acc)
+    
+    plt.figure(figsize=(8, 5))
+    plt.plot(thresholds, accuracies, marker='o')
+    plt.xlabel("Threshold")
+    plt.ylabel("Accuracy")
+    plt.title("Majority Vote Accuracy vs. Threshold")
+    plt.grid(True)
+    plt.show()
+
+plot_thresholds(predictions, target, thresholds=np.linspace(0, 1, 101))
 # %%
 # Function: Uncertainty Quantification
 def uncertainty_quantification(df):
@@ -256,167 +263,3 @@ def learn_weighted_average(df, y_true):
     print(weights.sort_values(ascending=False))
     
     return model, weighted_preds
-
-
-# %%
-# --- Run the functions ---
-
-# 1. Majority Vote (using default threshold 0.5)
-mv_predictions = majority_vote(df)
-print("Accuracy using majority vote (threshold=0.5):",
-      accuracy_score(y_true, mv_predictions))
-
-# 2. Uncertainty Quantification
-agreement_fraction = uncertainty_quantification(df)
-print("\nAgreement fraction (first 10 observations):")
-print(agreement_fraction.head(10))
-
-# 3. Plot accuracy vs. threshold
-plot_thresholds(df, y_true)
-
-# 4. Learn weighted average using logistic regression
-model, weighted_preds = learn_weighted_average(df, y_true)
-print("\nAccuracy using weighted average (threshold=0.5):",
-      accuracy_score(y_true, (weighted_preds >= 0.5).astype(int)))
-
-# %%
-
-# %%
-
-# %%
-
-# %%
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.metrics import accuracy_score
-from sklearn.linear_model import LogisticRegression
-
-# Set seed for reproducibility
-np.random.seed(42)
-
-# Number of observations and models
-n_obs = 1000
-n_models = 20
-
-# Simulate ground truth: assume balanced classes (0/1 with p=0.5)
-y_true = np.random.binomial(1, 0.5, n_obs)
-
-# Simulate model predictions:
-# Each model has an 80% chance of predicting the correct label.
-data = {}
-for i in range(1, n_models + 1):
-    # For each observation, predict correctly with probability 0.8
-    preds = np.where(
-        np.random.rand(n_obs) < 0.8,  # 80% chance
-        y_true,                      # correct prediction
-        1 - y_true                   # incorrect prediction
-    )
-    data[f'model_{i}'] = preds
-
-# Create DataFrame of predictions
-df = pd.DataFrame(data)
-
-# Function: Majority Vote
-def majority_vote(df, threshold=0.5):
-    """
-    Compute majority vote predictions.
-    
-    Parameters:
-      df: DataFrame containing model predictions (each column is a model).
-      threshold: float, threshold to decide final vote (default 0.5).
-      
-    Returns:
-      Array of final binary predictions.
-    """
-    # Average predictions across models (equivalent to fraction of 1's)
-    frac_ones = df.mean(axis=1)
-    return (frac_ones >= threshold).astype(int)
-
-# Function: Uncertainty Quantification
-def uncertainty_quantification(df):
-    """
-    Quantify uncertainty as the fraction of models that agree with the majority.
-    
-    Parameters:
-      df: DataFrame containing model predictions.
-      
-    Returns:
-      A Series with the agreement fraction per observation.
-    """
-    # Count how many models predict 1 for each observation
-    sum_votes = df.sum(axis=1)
-    # Determine agreement as the maximum of (votes for 1, votes for 0) divided by total models
-    agreement = np.maximum(sum_votes, n_models - sum_votes) / n_models
-    return agreement
-
-# Function: Plot threshold vs. accuracy
-def plot_thresholds(df, y_true, thresholds=np.linspace(0, 1, 101)):
-    """
-    Evaluate and plot accuracy over a range of thresholds for majority voting.
-    
-    Parameters:
-      df: DataFrame containing model predictions.
-      y_true: Ground truth labels.
-      thresholds: Array of thresholds to test.
-    """
-    accuracies = []
-    for thresh in thresholds:
-        preds = majority_vote(df, threshold=thresh)
-        acc = accuracy_score(y_true, preds)
-        accuracies.append(acc)
-    
-    plt.figure(figsize=(8, 5))
-    plt.plot(thresholds, accuracies, marker='o')
-    plt.xlabel("Threshold")
-    plt.ylabel("Accuracy")
-    plt.title("Majority Vote Accuracy vs. Threshold")
-    plt.grid(True)
-    plt.show()
-
-# Function: Learn weighted average using logistic regression
-def learn_weighted_average(df, y_true):
-    """
-    Learn a weighted ensemble of model predictions via logistic regression.
-    
-    Parameters:
-      df: DataFrame containing model predictions.
-      y_true: Ground truth labels.
-      
-    Returns:
-      Trained logistic regression model and predicted probabilities.
-    """
-    # Initialize and fit logistic regression using the model predictions as features
-    model = LogisticRegression(solver='lbfgs', max_iter=1000)
-    model.fit(df, y_true)
-    
-    # Get predicted probabilities for class 1
-    weighted_preds = model.predict_proba(df)[:, 1]
-    
-    # Display learned coefficients for each model (weight)
-    weights = pd.Series(model.coef_[0], index=df.columns)
-    print("Learned Weights for each model:")
-    print(weights.sort_values(ascending=False))
-    
-    return model, weighted_preds
-
-# --- Run the functions ---
-
-# 1. Majority Vote (using default threshold 0.5)
-mv_predictions = majority_vote(df)
-print("Accuracy using majority vote (threshold=0.5):",
-      accuracy_score(y_true, mv_predictions))
-
-# 2. Uncertainty Quantification
-agreement_fraction = uncertainty_quantification(df)
-print("\nAgreement fraction (first 10 observations):")
-print(agreement_fraction.head(10))
-
-# 3. Plot accuracy vs. threshold
-plot_thresholds(df, y_true)
-
-# 4. Learn weighted average using logistic regression
-model, weighted_preds = learn_weighted_average(df, y_true)
-print("\nAccuracy using weighted average (threshold=0.5):",
-      accuracy_score(y_true, (weighted_preds >= 0.5).astype(int)))
-
