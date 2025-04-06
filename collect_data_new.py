@@ -36,7 +36,7 @@ def get_llm_enriched(mode: str) -> pd.DataFrame:
     if not os.path.exists(filename):
         # generate new llm enrichment data
         clients = pd.read_csv(split_path)["file_path"].tolist()
-        clients = sorted(clients)[:3]
+        clients = sorted(clients)[:20]
         llm_columns = llm_enriched(clients, dataset_path, filename)
     else:
         # load from file
