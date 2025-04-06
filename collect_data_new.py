@@ -9,7 +9,7 @@ from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
 
-def collect_enriched(mode: str, filename: str, rules: list) -> pd.DataFrame:
+def collect_enriched(mode: str, filename: str, rules: list, embedding: bool) -> pd.DataFrame:
     n_rules = len(rules)
 
     if len(sys.argv) > 1:
@@ -33,13 +33,13 @@ def collect_enriched(mode: str, filename: str, rules: list) -> pd.DataFrame:
     clients = sorted(clients)
     n_clients = len(clients)
 
-    if "embedding" in rules:
+    if embedding:
         # ------------------------------------------------------------
         # 1. Compute PCA embeddings for all clients (before main loop)
         # ------------------------------------------------------------
         # Load the embedding model once
         model_name = "sentence-transformers/paraphrase-MiniLM-L6-v2"
-        embedder = SentenceTransformer(model_name, device="mps")  # or "cuda" if available
+        embedder = SentenceTransformer(model_name, device="cpu")  # or "cuda" if available
 
         # Define maximum number of words per section chunk (to respect context window limits)
         max_section_words = 100
@@ -50,20 +50,14 @@ def collect_enriched(mode: str, filename: str, rules: list) -> pd.DataFrame:
             # We extract text only from keys starting with "client_description"
             text_agg = ""
             documents = list(pathlib.Path(client_folder).glob("*.json"))
-            for json_file in documents:
-                try:
-                    with open(json_file, "r") as file:
-                        file_data = json.load(file)
-                        file_prefix = json_file.stem
-                        for key, value in file_data.items():
-                            if key.startswith("client_description"):
-                                if isinstance(value, dict):
-                                    for nested_key, nested_value in value.items():
-                                        text_agg += f"{file_prefix}_{key}_{nested_key}: {str(nested_value).strip()}\n\n"
-                                else:
-                                    text_agg += f"{file_prefix}_{key}: {str(value).strip()}\n\n"
-                except Exception as e:
-                    print(f"Error processing file {json_file}: {str(e)}")
+            json_file = os.path.join(client_folder, "client_description.json")
+            try:
+                with open(json_file, "r") as file:
+                    file_data = json.load(file)
+                for key, value in file_data.items():
+                    text_agg += f"{key}: {str(value).strip()}\n\n"
+            except Exception as e:
+                print(f"Error processing file {json_file}: {str(e)}")
             # Split the aggregated text into sections (using double-newline as the delimiter)
             sections = [sec for sec in text_agg.strip().split("\n\n") if sec.strip()]
             # Further split a section if it exceeds max_section_words
@@ -146,7 +140,7 @@ def collect_enriched(mode: str, filename: str, rules: list) -> pd.DataFrame:
     df = pd.DataFrame(all_data)
 
     # Merge PCA results into the DataFrame based on the client id (here stored in "folder_name")
-    if "embedding" in rules:
+    if embedding:
         df_final = df.merge(df_pca, left_on="folder_name", right_on="client_id", how="left")
     else:
         df_final = df

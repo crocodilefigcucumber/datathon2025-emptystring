@@ -50,7 +50,7 @@ import sys
 if __name__ == "__main__":
 
     rules = [check_passport_expiry, RM_contact, check_inconsistency, check_names]
-
+    embedding = True
     # ------------------------------------------------------------------------------
     # 1. Load pre-split datasets
     # ------------------------------------------------------------------------------
@@ -59,19 +59,19 @@ if __name__ == "__main__":
     mode = "train"
     filename =  "enriched_" + mode + ".csv"
     if not os.path.exists(filename):
-        data = collect_enriched(mode=mode, filename=filename, rules=rules)
+        data = collect_enriched(mode=mode, filename=filename, rules=rules, embedding=embedding)
     else:
         data = pd.read_csv(filename)
 
     validation_file = "enriched_" + mode + ".csv"
     if not os.path.exists("enriched_val.csv"):
-        val_df = collect_enriched(mode="val", filename="enriched_val.csv", rules=rules)
+        val_df = collect_enriched(mode="val", filename="enriched_val.csv", rules=rules, embedding=embedding)
     else:
         val_df  = pd.read_csv("enriched_val.csv")
     
     train_df = clean_dataframe(data)
     val_df = clean_dataframe(val_df)
-    
+      
     categorical_features = [
         "inheritance_details_relationship", "investment_risk_profile",
         "investment_horizon", "investment_experience", "currency"
@@ -82,6 +82,9 @@ if __name__ == "__main__":
     numerical_features = [
         "aum_savings", "aum_inheritance", "aum_real_estate_value"
     ]
+    if embedding:
+        numerical_features += ["pc_1", "pc_2", "pc_3", "pc_4", "pc_5"]
+
 
     # ------------------------------------------------------------------------------
     # 2. Define feature lists and target
