@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
 
 sys.path.append("../rules")
-from rules.flash_prompt import check_discrepancy_via_llm
+from rules.groq_prompt import check_discrepancy_via_llm
 
 
 def get_llm_enriched(mode: str) -> pd.DataFrame:
@@ -36,7 +36,7 @@ def get_llm_enriched(mode: str) -> pd.DataFrame:
     if not os.path.exists(filename):
         # generate new llm enrichment data
         clients = pd.read_csv(split_path)["file_path"].tolist()
-        clients = sorted(clients)[:20]
+        clients = sorted(clients)[:50]
         llm_columns = llm_enriched(clients, dataset_path, filename)
     else:
         # load from file
