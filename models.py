@@ -21,7 +21,11 @@ from sklearn.svm import SVC
 
 # Additional diverse models for tabular data
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import GradientBoostingClassifier, AdaBoostClassifier, ExtraTreesClassifier
+from sklearn.ensemble import (
+    GradientBoostingClassifier,
+    AdaBoostClassifier,
+    ExtraTreesClassifier,
+)
 from xgboost import XGBClassifier
 
 # For randomness in hyperparameter distributions and for ensemble uncertainty
@@ -32,6 +36,7 @@ from scipy.stats import mode
 SEED = 1337
 import random
 import numpy as np
+
 random.seed(SEED)
 np.random.seed(SEED)
 
@@ -57,18 +62,14 @@ if __name__ == "__main__":
 
     # Read mode from flags
     mode = "train"
-    filename =  "enriched_" + mode + ".csv"
+    filename = "enriched_" + mode + ".csv"
 
-    data = load_or_create(filename=filename,
-                          rules=rules,
-                          embedding=5,
-                          mode="train",
-                          llm = True)
-    val_df = load_or_create(filename="enriched_val.csv",
-                            rules=rules,
-                            embedding=5,
-                            mode="val",
-                            llm=True)
+    data = load_or_create(
+        filename=filename, rules=rules, embedding=0, mode="train", llm=True
+    )
+    val_df = load_or_create(
+        filename="enriched_val.csv", rules=rules, embedding=0, mode="val", llm=True
+    )
 
     train_df = clean_dataframe(data)
     val_df = clean_dataframe(val_df)
