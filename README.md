@@ -1,5 +1,6 @@
 # Discrepancy Detection in Client Profiles
-Team Name: 
+Team Name:
+
 Team Members: Noah Stäuble, Mikael Makonnen, Michał Mikuta, Elias Mbarek
 
 ### Introduction
