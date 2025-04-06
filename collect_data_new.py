@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
 
 sys.path.append("../rules")
-from rules.openai_prompt import check_discrepancy_via_llm
+from rules.flash_prompt import check_discrepancy_via_llm
 
 
 def get_llm_enriched(mode: str) -> pd.DataFrame:

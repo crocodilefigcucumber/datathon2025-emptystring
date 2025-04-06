@@ -50,16 +50,12 @@ def send_full_discrepancy_request(
     )
 
     payload = {
-        "contents": [
-            {
-                "parts": [{"text": prompt}]
-            }
-        ],
+        "contents": [{"parts": [{"text": prompt}]}],
         "generationConfig": {
             "temperature": temperature,
             "topP": top_p,
-            "maxOutputTokens": max_tokens
-        }
+            "maxOutputTokens": max_tokens,
+        },
     }
 
     response = requests.post(endpoint, headers=headers, json=payload)
@@ -128,7 +124,7 @@ def check_discrepancy_via_llm(folder_dir):
         elif key in keys:
             client_dict[key] = value
 
-    with open("./openai_key.txt", "r") as file:
+    with open("./gemini_api_key.txt", "r") as file:
         api_key = file.read().strip()
 
     for value1, value2 in zip(desc_dict.values(), client_dict.values()):
