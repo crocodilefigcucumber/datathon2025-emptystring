@@ -1,9 +1,9 @@
 import os
 import json
-from flash_prompt import send_full_discrepancy_request
+from groq_prompt import send_full_discrepancy_request
 
 # Set your Gemini API key here or load from a local .txt file
-with open("gemini_api_key.txt", "r") as f:
+with open("groq_api_key.txt", "r") as f:
     api_key = f.read().strip()
 
 # System prompt for the Gemini model
