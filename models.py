@@ -64,36 +64,40 @@ if __name__ == "__main__":
     filename = "enriched_" + mode + ".csv"
 
     train = load_or_create(
-        filename=filename, rules=rules, embedding=5, mode="train", llm=True
+        filename=filename, rules=rules, embedding=5, mode="train", llm=False
     )
     val = load_or_create(
-        filename="enriched_val.csv", rules=rules, embedding=5, mode="val", llm=True
+        filename="enriched_val.csv", rules=rules, embedding=5, mode="val", llm=False
     )
 
     train_df = clean_dataframe(train)
     val_df = clean_dataframe(val)
 
-    filled = train_df["higher_education_llm"].notnull()
-    clients = train_df["folder_name"][filled]
-    results = {}
-    for llm_col in ["higher_education_llm" , "employment_history_llm", "financial_llm"]:
-        print(llm_col)
-        res = pd.DataFrame(data=np.zeros((len(clients), 2)))
-        res.index = clients
-        res.columns = ["Accept", "comment"]
-        accept = (train_df[llm_col] == 1)[filled]
+    # filled = train_df["higher_education_llm"].notnull()
+    # clients = train_df["folder_name"][filled]
+    # results = {}
+    # for llm_col in ["higher_education_llm" , "employment_history_llm", "financial_llm"]:
+    #     print(llm_col)
+    #     res = pd.DataFrame(data=np.zeros((len(clients), 2)))
+    #     res.index = clients
+    #     res.columns = ["Accept", "comment"]
+    #     accept = (train_df[llm_col] == 1)[filled]
 
-        res["Accept"] = list(accept.replace({False: "Accept", True: "Reject"}))
-        res["comment"] = [""]*len(clients)
+    #     res["Accept"] = list(accept.replace({False: "Accept", True: "Reject"}))
+    #     res["comment"] = [""]*len(clients)
 
-        confus, false_negatives, false_positives, fp_rules = evaluate(res)
-        print(confus)
+    #     confus, false_negatives, false_positives, fp_rules = evaluate(res)
+    #     print(confus)
 
 
     categorical_features = [
         "inheritance_details_relationship", "investment_risk_profile",
         "investment_horizon", "investment_experience", "currency"
     ]
+    
+    for rule in rules:
+        train_df[rule.__name__].astype("category")
+        
     for rule in rules:
         categorical_features.append(rule.__name__)
 

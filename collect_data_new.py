@@ -106,9 +106,10 @@ def load_or_create(
                 mode=mode, filename=filename, rules=rules, embedding=embedding
             )
         # generate llm data separately
-        if not llm_data:
-            llm_columns = get_llm_enriched(mode)
-            data = pd.concat([data, llm_columns], axis=1)
+        if llm:
+            if not llm_data:
+                llm_columns = get_llm_enriched(mode)
+                data = pd.concat([data, llm_columns], axis=1)
     return data
 
 
@@ -145,7 +146,7 @@ def collect_enriched(
         # Load the embedding model once
         model_name = "sentence-transformers/paraphrase-MiniLM-L6-v2"
         embedder = SentenceTransformer(
-            model_name, device="cpu"
+            model_name, device="mps"
         )  # or "cuda" if available
 
         # Define maximum number of words per section chunk (to respect context window limits)
