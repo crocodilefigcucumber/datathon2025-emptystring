@@ -34,26 +34,13 @@ def send_full_discrepancy_request(
     top_p: float = 1.0,
 ) -> dict:
     """
-    Sends a prompt to Gemini 1.5 Flash to check for discrepancies between ground truth and free-form text.
-
-    Args:
-        system_prompt (str): The instruction for the model.
-        ground_truth (dict): Structured ground truth data.
-        summary_text (str): The unstructured user summary.
-        api_key (str): Gemini API key.
-        model (str): Gemini model endpoint.
-        max_tokens (int): Maximum response tokens.
-        temperature (float): Randomness factor.
-        top_p (float): Top-p sampling control.
-
-    Returns:
-        dict: JSON result from the model.
+    Sends a prompt to Gemini 1.5 Flash to check for discrepancies.
+    Uses Google AI Studio API key (not OAuth2).
     """
-    endpoint = f"https://generativelanguage.googleapis.com/v1beta/{model}:generateContent"
+    endpoint = f"https://generativelanguage.googleapis.com/v1beta/{model}:generateContent?key={api_key}"
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
     }
 
     prompt = (
