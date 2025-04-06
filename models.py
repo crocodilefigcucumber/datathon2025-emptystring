@@ -36,7 +36,7 @@ random.seed(SEED)
 np.random.seed(SEED)
 
 from utilities.evaluate import evaluate
-from collect_data_new import collect_enriched
+from utilities.collect_data_new import collect_enriched, load_or_create
 from get_clean_dataframe import clean_dataframe
 
 from rules.trusted import RM_contact
@@ -49,7 +49,7 @@ import sys
 
 if __name__ == "__main__":
 
-    rules = [check_passport_expiry, RM_contact, check_inconsistency, check_names]
+    rules = [check_passport_expiry, RM_contact, check_inconsistency, check_names, check_email_name]
     embedding = True
     # ------------------------------------------------------------------------------
     # 1. Load pre-split datasets
@@ -58,17 +58,10 @@ if __name__ == "__main__":
     # Read mode from flags
     mode = "train"
     filename =  "enriched_" + mode + ".csv"
-    if not os.path.exists(filename):
-        data = collect_enriched(mode=mode, filename=filename, rules=rules, embedding=embedding)
-    else:
-        data = pd.read_csv(filename)
 
-    validation_file = "enriched_" + mode + ".csv"
-    if not os.path.exists("enriched_val.csv"):
-        val_df = collect_enriched(mode="val", filename="enriched_val.csv", rules=rules, embedding=embedding)
-    else:
-        val_df  = pd.read_csv("enriched_val.csv")
-    
+    data = load_or_create(filename=filename, rules=rules, embedding=5, mode="train")
+    val_df = load_or_create(filename="enriched_val.csv", rules=rules, embedding=5, mode="val")
+
     train_df = clean_dataframe(data)
     val_df = clean_dataframe(val_df)
       
