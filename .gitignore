@@ -20,4 +20,4 @@ __pycache__/
 # Ignore api keys
 api_key.txt
 openai_key.txt
-*_key.txt
+gemini_api_key.txt
