@@ -48,13 +48,12 @@ from rules.trusted import RM_contact
 from rules.passportdate import check_passport_expiry
 from rules.names_check import check_names
 from rules.consistency import check_inconsistency
-from rules.email_check import check_email_name
+from rules.adult_graduate import check_education_graduation
 
-import sys
 
 if __name__ == "__main__":
 
-    rules = [check_passport_expiry, RM_contact, check_inconsistency, check_names]
+    rules = [check_passport_expiry, RM_contact, check_inconsistency, check_names, check_education_graduation]
     embedding = True
     # ------------------------------------------------------------------------------
     # 1. Load pre-split datasets
@@ -64,15 +63,15 @@ if __name__ == "__main__":
     mode = "train"
     filename = "enriched_" + mode + ".csv"
 
-    data = load_or_create(
-        filename=filename, rules=rules, embedding=0, mode="train", llm=True
+    train = load_or_create(
+        filename=filename, rules=rules, embedding=5, mode="train", llm=True
     )
-    val_df = load_or_create(
-        filename="enriched_val.csv", rules=rules, embedding=0, mode="val", llm=True
+    val = load_or_create(
+        filename="enriched_val.csv", rules=rules, embedding=5, mode="val", llm=True
     )
 
-    train_df = clean_dataframe(data)
-    val_df = clean_dataframe(val_df)
+    train_df = clean_dataframe(train)
+    val_df = clean_dataframe(val)
 
     filled = train_df["higher_education_llm"].notnull()
     clients = train_df["folder_name"][filled]
@@ -91,8 +90,6 @@ if __name__ == "__main__":
         print(confus)
 
 
-
-    """
     categorical_features = [
         "inheritance_details_relationship", "investment_risk_profile",
         "investment_horizon", "investment_experience", "currency"
@@ -149,16 +146,16 @@ if __name__ == "__main__":
     # 4. Define candidate models (diverse and high-performing on tabular data)
     # ------------------------------------------------------------------------------
     models = {
-        #"RandomForest":    RandomForestClassifier(random_state=SEED),
-        #"LightGBM":        LGBMClassifier(random_state=SEED),
-        #"Lasso":           LogisticRegression(penalty='l1', solver='liblinear', random_state=SEED),
-        #"Ridge":           RidgeClassifier(random_state=SEED),
+        "RandomForest":    RandomForestClassifier(random_state=SEED),
+        "LightGBM":        LGBMClassifier(random_state=SEED),
+        "Lasso":           LogisticRegression(penalty='l1', solver='liblinear', random_state=SEED),
+        "Ridge":           RidgeClassifier(random_state=SEED),
         "SVM":             SVC(probability=True, random_state=SEED),
-        #"KNN":             KNeighborsClassifier(),
-        #"GradientBoosting":GradientBoostingClassifier(random_state=SEED),
-        #"AdaBoost":        AdaBoostClassifier(random_state=SEED),
-        #"ExtraTrees":      ExtraTreesClassifier(random_state=SEED),
-        #"XGBoost":         XGBClassifier(random_state=SEED, use_label_encoder=False, eval_metric='logloss')
+        "KNN":             KNeighborsClassifier(),
+        "GradientBoosting":GradientBoostingClassifier(random_state=SEED),
+        "AdaBoost":        AdaBoostClassifier(random_state=SEED),
+        "ExtraTrees":      ExtraTreesClassifier(random_state=SEED),
+        "XGBoost":         XGBClassifier(random_state=SEED, use_label_encoder=False, eval_metric='logloss')
     }
 
     # ------------------------------------------------------------------------------
@@ -285,4 +282,3 @@ if __name__ == "__main__":
         details["trained on"] = categorical_features + numerical_features
         with open(f"saved_models/details_{model}_{timestamp}.json", 'w') as fp:
             json.dump(details, fp)
-    """
