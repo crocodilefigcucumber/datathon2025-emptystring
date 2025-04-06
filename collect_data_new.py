@@ -9,8 +9,9 @@ from tqdm import tqdm
 from sentence_transformers import SentenceTransformer
 from sklearn.decomposition import PCA
 
-sys.path.append('../rules')
+sys.path.append("../rules")
 from rules.openai_prompt import check_discrepancy_via_llm
+
 
 def get_llm_enriched(mode: str) -> pd.DataFrame:
     # check if llm_file already present
@@ -31,7 +32,7 @@ def get_llm_enriched(mode: str) -> pd.DataFrame:
         split_path = "splits/" + mode + "_split.csv"
     else:
         raise NotImplementedError("Final mode not yet implemented.")
-    
+
     if not os.path.exists(filename):
         # generate new llm enrichment data
         clients = pd.read_csv(split_path)["file_path"].tolist()
@@ -42,27 +43,37 @@ def get_llm_enriched(mode: str) -> pd.DataFrame:
         llm_columns = pd.read_csv(filename)
     return llm_columns
 
+
 def llm_enriched(clients: list, dataset_path: str, filename: str) -> pd.DataFrame:
     n_clients = len(clients)
     enriched = pd.DataFrame(data=np.zeros((n_clients, 3)))
-    enriched.columns = ["higher_education_llm", "employment_history_llm", "financial_llm"]
+    enriched.columns = [
+        "higher_education_llm",
+        "employment_history_llm",
+        "financial_llm",
+    ]
 
     i = 0
     for client in tqdm(clients, desc="Generating llm enrichments"):
         client_folder = os.path.join(dataset_path, client)
-        
+
         # call llm api
         results = check_discrepancy_via_llm(client_folder)
 
         enriched.loc[i] = [int(result) for result in results]
-    i += 1 
+    i += 1
 
     enriched.to_csv(filename)
     return enriched
 
-def load_or_create(filename: str, rules: list, embedding: int, mode: str, llm: bool=False) -> pd.DataFrame:
+
+def load_or_create(
+    filename: str, rules: list, embedding: int, mode: str, llm: bool = False
+) -> pd.DataFrame:
     if not os.path.exists(filename):
-        data = collect_enriched(mode=mode, filename=filename, rules=rules, embedding=embedding)
+        data = collect_enriched(
+            mode=mode, filename=filename, rules=rules, embedding=embedding
+        )
         print("no save found, collecting data")
     else:
         data = pd.read_csv(filename)
@@ -72,7 +83,7 @@ def load_or_create(filename: str, rules: list, embedding: int, mode: str, llm: b
         for rule in rules:
             if rule.__name__ not in data.columns:
                 old_data = False
-        
+
         # check embedding columns present
         if embedding > 0:
             for i in range(embedding):
@@ -81,21 +92,29 @@ def load_or_create(filename: str, rules: list, embedding: int, mode: str, llm: b
         # check llm columns
         if llm:
             llm_data = True
-            for llm_rule in ["higher_education_llm", "employment_history_llm", "financial_llm"]:
+            for llm_rule in [
+                "higher_education_llm",
+                "employment_history_llm",
+                "financial_llm",
+            ]:
                 if llm_rule not in data.columns:
                     llm_data = False
         # reload data if necessary
         if not old_data:
             print("data incomplete, collecting data")
-            data = collect_enriched(mode=mode, filename=filename, rules=rules, embedding=embedding)
-    # generate llm data separately
-    if not llm_data:
-        llm_columns = get_llm_enriched(mode)
-        data = pd.concat([data, llm_columns], axis=1)
+            data = collect_enriched(
+                mode=mode, filename=filename, rules=rules, embedding=embedding
+            )
+        # generate llm data separately
+        if not llm_data:
+            llm_columns = get_llm_enriched(mode)
+            data = pd.concat([data, llm_columns], axis=1)
     return data
 
 
-def collect_enriched(mode: str, filename: str, rules: list, embedding: bool) -> pd.DataFrame:
+def collect_enriched(
+    mode: str, filename: str, rules: list, embedding: bool
+) -> pd.DataFrame:
     n_rules = len(rules)
 
     if len(sys.argv) > 1:
@@ -125,7 +144,9 @@ def collect_enriched(mode: str, filename: str, rules: list, embedding: bool) -> 
         # ------------------------------------------------------------
         # Load the embedding model once
         model_name = "sentence-transformers/paraphrase-MiniLM-L6-v2"
-        embedder = SentenceTransformer(model_name, device="cpu")  # or "cuda" if available
+        embedder = SentenceTransformer(
+            model_name, device="cpu"
+        )  # or "cuda" if available
 
         # Define maximum number of words per section chunk (to respect context window limits)
         max_section_words = 100
@@ -152,7 +173,7 @@ def collect_enriched(mode: str, filename: str, rules: list, embedding: bool) -> 
                 words = section.split()
                 if len(words) > max_section_words:
                     for i in range(0, len(words), max_section_words):
-                        chunk = " ".join(words[i:i + max_section_words])
+                        chunk = " ".join(words[i : i + max_section_words])
                         chunks.append(chunk)
                 else:
                     chunks.append(section)
@@ -170,12 +191,16 @@ def collect_enriched(mode: str, filename: str, rules: list, embedding: bool) -> 
         k = 5  # number of principal components
         pca = PCA(n_components=k)
         reduced_embeddings = pca.fit_transform(all_client_embeddings)
-        df_pca = pd.DataFrame(
-            reduced_embeddings,
-            columns=[f"pc_{i+1}" for i in range(k)],
-            index=clients
-        ).reset_index().rename(columns={"index": "client_id"})
-        
+        df_pca = (
+            pd.DataFrame(
+                reduced_embeddings,
+                columns=[f"pc_{i+1}" for i in range(k)],
+                index=clients,
+            )
+            .reset_index()
+            .rename(columns={"index": "client_id"})
+        )
+
     # ------------------------------------------------------------
     # 2. Main loop: Collect enriched features (minimal changes from original)
     # ------------------------------------------------------------
@@ -212,7 +237,9 @@ def collect_enriched(mode: str, filename: str, rules: list, embedding: bool) -> 
                     for key, value in file_data.items():
                         if isinstance(value, dict):
                             for nested_key, nested_value in value.items():
-                                client_data[f"{file_prefix}_{key}_{nested_key}"] = nested_value
+                                client_data[f"{file_prefix}_{key}_{nested_key}"] = (
+                                    nested_value
+                                )
                         else:
                             client_data[f"{file_prefix}_{key}"] = value
             except json.JSONDecodeError:
@@ -227,15 +254,18 @@ def collect_enriched(mode: str, filename: str, rules: list, embedding: bool) -> 
 
     # Merge PCA results into the DataFrame based on the client id (here stored in "folder_name")
     if embedding:
-        df_final = df.merge(df_pca, left_on="folder_name", right_on="client_id", how="left")
+        df_final = df.merge(
+            df_pca, left_on="folder_name", right_on="client_id", how="left"
+        )
     else:
         df_final = df
 
     # Concatenate the enriched features (rule outputs)
     df_final = pd.concat([df_final, enriched], axis=1)
-    
+
     df_final.to_csv(filename, index=False)
     return df_final
+
 
 def collect_to_csv(clients: list, filename: str) -> pd.DataFrame:
     all_data = []
@@ -263,7 +293,9 @@ def collect_to_csv(clients: list, filename: str) -> pd.DataFrame:
                         # Flatten nested dictionaries (optional - comment out if not needed)
                         if isinstance(value, dict):
                             for nested_key, nested_value in value.items():
-                                client_data[f"{file_prefix}_{key}_{nested_key}"] = nested_value
+                                client_data[f"{file_prefix}_{key}_{nested_key}"] = (
+                                    nested_value
+                                )
                         else:
                             client_data[f"{file_prefix}_{key}"] = value
             except json.JSONDecodeError:
