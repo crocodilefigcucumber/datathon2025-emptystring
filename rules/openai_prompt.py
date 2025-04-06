@@ -1,6 +1,26 @@
 import requests
 import json
-import os 
+import os
+
+
+def parse_boolean_from_string(value: str) -> bool:
+    """
+    Parses a string and returns its boolean value.
+    Handles extra quotation marks and different capitalization.
+
+    Args:
+        value (str): The string to parse.
+
+    Returns:
+        bool: The parsed boolean value. Defaults to False if in doubt.
+    """
+    normalized_value = value.strip().strip('"').strip("'").lower()
+    if normalized_value in ["true", "yes", "1"]:
+        return True
+    elif normalized_value in ["false", "no", "0"]:
+        return False
+    else:
+        return False
 
 
 def send_full_discrepancy_request(
@@ -90,69 +110,77 @@ def send_full_discrepancy_request(
         raise ValueError(f"JSON parsing failed: {e}\nRaw model output:\n{raw_output}")
 
 
-def :
+def check_discrepancy_via_llm(folder_dir):
+    """
+    Check discrepancies between the client description and profile using LLM.
+    Args:
+        folder_dir (str): Path to the client folder.
+    """
 
-    #create dictionary which compares the values from the two files
+    out = []
+    # create dictionary which compares the values from the two files
     desc_dict = {}
-    #{description_field1 : description1, ... }
+    # {description_field1 : description1, ... }
     client_dict = {}
-    #{key1_of_desc_dict: extract(Education), ...}
+    # {key1_of_desc_dict: extract(Education), ...}
     keys = ["higher_education", "employment_history", "financial"]
 
     if not os.path.isdir(folder_dir):
         raise Exception(f"Directory '{folder_dir}' not found.")
-    
+
     description_path = os.path.join(folder_dir, "client_description.json")
 
     with open(description_path, "r") as f:
         description = json.load(f)
-    
 
     profile_path = os.path.join(folder_dir, "client_profile.json")
     with open(profile_path, "r") as f:
         profile = json.load(f)
-    
-    for i, value in zip(len(keys),description.values()[1:]):
-        desc_dict[keys[i]] = value
-    
-    for key, value in profile.keys():
+
+    for key, value in description.items():
+        if key not in ["Summary Note", "Family Background", "Client Summary"]:
+            desc_dict[key] = value
+
+    for key, value in profile.items():
         if key in ["aum", "inheritance_details", "real_estate_details"]:
-            client_dict["financial"] = [profile.get("aum", ""), profile.get("inheritance_details", ""), profile.get("real_estate_details", "")]
-        else:
+            client_dict["financial"] = [
+                profile.get("aum", ""),
+                profile.get("inheritance_details", ""),
+                profile.get("real_estate_details", ""),
+            ]
+        elif key in keys:
             client_dict[key] = value
 
+    with open("./openai_key.txt", "r") as file:
+        api_key = file.read().strip()
 
-with open("./openai_key.txt", "r") as file:
-    api_key = file.read().strip()
+    for value1, value2 in zip(desc_dict.values(), client_dict.values()):
+        ground_truth_data = value2
+        summary_text = value1
 
+        # Example ground truth JSON data
+        # ground_truth_data = {
+        # "secondary_school": {"name": "Ålborg Katedralskole", "graduation_year": 2022},
+        # "higher_education": [],
+        # }
 
+        # Example free-form text
+        # summary_text = "In 2009, Jørgensen graduated from Ålborg Katedralskole with a secondary school diploma.\n"
 
-for value1, value2 in zip(desc_dict.values(), client_dict.values()):
-    ground_truth_data = value2
-    summary_text = value1
+        # System prompt instructing the LLM to fill out discrepancy info for each entry.
+        discrepancy_system_prompt = """
+        You are a discrepancy checker. Compare the ground truth JSON with a free-form text. For each key in the JSON (e.g., "secondary_school", "higher_education"), return a single boolean: "true" if there is any discrepancy between the ground truth and the free-form text for that key, and "false" if there is none. For nested objects or arrays, do not break them down further; treat them as a single unit. For empty arrays, return "false".
+        Return only a JSON object with the same top-level keys as the ground truth and nothing else (DO NOT ADD ANY EXTRA KEYS, thank you). Do not include any additional text or explanations.
+        """
 
-    # Example ground truth JSON data
-    #ground_truth_data = {
-        #"secondary_school": {"name": "Ålborg Katedralskole", "graduation_year": 2022},
-       # "higher_education": [],
-    #}
+        # Load API key from file
+        try:
+            discrepancies = send_full_discrepancy_request(
+                discrepancy_system_prompt, ground_truth_data, summary_text, api_key
+            )
+            out.append(sum([entry for entry in discrepancies.values()]) > 0)
+        except Exception as e:
+            print("An error occurred:", e)
+            out.append(False)
 
-    # Example free-form text
-    #summary_text = "In 2009, Jørgensen graduated from Ålborg Katedralskole with a secondary school diploma.\n"
-
-    # System prompt instructing the LLM to fill out discrepancy info for each entry.
-    discrepancy_system_prompt = """
-    You are a discrepancy checker. Compare the ground truth JSON with a free-form text. For each key in the JSON (e.g., "secondary_school", "higher_education"), return a single boolean: "true" if there is any discrepancy between the ground truth and the free-form text for that key, and "false" if there is none. For nested objects or arrays, do not break them down further; treat them as a single unit. For empty arrays, return "false".
-    Return only a JSON object with the same top-level keys as the ground truth and nothing else. Do not include any additional text or explanations.
-    """
-
-    # Load API key from file
-
-    try:
-        discrepancies = send_full_discrepancy_request(
-            discrepancy_system_prompt, ground_truth_data, summary_text, api_key
-        )
-        print("Discrepancy JSON:")
-        print(json.dumps(discrepancies, indent=2))
-    except Exception as e:
-        print("An error occurred:", e)
+    return out
